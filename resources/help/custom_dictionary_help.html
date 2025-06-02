@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        background: #f0f0f0;
+        margin: 0;
+        padding: 20px;
+        font-size: 14px;
+        overflow-y: hidden;
+      }
+      #custom-dictionary-help {
+        width: 100%;
+        max-width: none;
+        height: 92vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: #f8f8f8;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .table,
+      .table-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        width: 100%;
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+      .table table,
+      .table-container table {
+        border-collapse: collapse;
+        min-width: 600px;
+        background: #ffffff;
+      }
+      .table th,
+      .table td,
+      .table-container th,
+      .table-container td {
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+        white-space: nowrap;
+        text-align: center;
+        font-size: 12px;
+        font-weight: normal;
+      }
+      #custom-dictionary-help h3 {
+        color: #333;
+        font-size: 16px;
+        margin-top: 30px;
+        margin-bottom: 10px;
+      }
+      .example {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        background: #222222;
+        color: #ffffff;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .step {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="custom-dictionary-help">
+      <div class="step">
+        <p><strong>1. UniDicをダウンロードする</strong></p>
+        <p>
+          国立国語研究所のサイト（https://clrd.ninjal.ac.jp/unidic/）から、テキストの時代や文体に合わせて、適切なUniDicをダウンロードしてください。
+        </p>
+      </div>
+      <div class="step">
+        <p><strong>2. ZIPファイルを解凍して任意の場所に置く</strong></p>
+        <p>
+          ダウンロードしたZIPファイルを解凍し、フォルダを任意の場所に置きます。以下は、Unidicフォルダの構成例です（フォルダ名は辞書により異なります）。
+        </p>
+        <div class="example">
+          <code
+            >unidic-cwj-202302<br />
+            　| char.bin<br />
+            　| dicrc    (← 辞書設定用ファイル)<br />
+            　| matrix.bin<br />
+            　| model.bin<br />
+            　| README_unidic-cwj.txt<br />
+            　| rewite.def<br />
+            　| sys.dic<br />
+            　| unk.dic<br />
+            　└── license</code
+          >
+        </div>
+        <p>
+          フォルダが入れ子構造になっている場合でも、上記ファイル群が同一フォルダ内に格納されていれば大丈夫です。なお、解凍後のZIPファイルは不要です。
+        </p>
+      </div>
+      <div class="step">
+        <p><strong>3. UniDicのフォルダ内にあるdicrcを設定する</strong></p>
+        <p>
+          設定タブからカスタム辞書の「選択」ボタンをクリックし、フォルダ内の「dicrc」ファイルを選択してください。カスタム辞書として適用されます。
+        </p>
+      </div>
+      <div class="step"></div>
+    </div>
+  </body>
+</html>

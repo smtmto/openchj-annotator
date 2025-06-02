@@ -1,0 +1,38 @@
+{
+    "unidic_paths": {
+        "lite": "bundled",
+        "dic": null
+    },
+    "user_dictionary_path": null,
+    "active_dictionary": "lite",
+    "output_format": "tsv",
+    "output_encoding": "utf-8",
+    "remove_tags": {
+        "enabled": false,
+        "types": [],
+        "mode": "remove_with_content"
+    },
+    "regex_settings": {
+        "enabled": false,
+        "patterns": []
+    },
+    "tag_special_settings": {
+        "tag_patterns": []
+    },
+    "subcorpus_name": "",
+    "regex_rules": [],
+    "aozora_cleanup": false,
+    "output_settings": {
+        "format": "TSV",
+        "prefix": "",
+        "suffix": "_analyzed",
+        "default_directory": "",
+        "output_directory": "",
+        "remove_full_space": false,
+        "remove_half_space": false,
+        "remove_newline": false,
+        "include_subfolders": false,
+        "use_custom_output_dir": false
+    },
+    "output_newline": "\n"
+}
