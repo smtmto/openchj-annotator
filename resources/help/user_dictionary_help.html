@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        background: #f0f0f0;
+        margin: 0;
+        padding: 20px;
+        font-size: 14px;
+        overflow-y: hidden;
+      }
+      #user-dictionary-help {
+        width: 100%;
+        max-width: none;
+        height: 92vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: #f8f8f8;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .table,
+      .table-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        width: 100%;
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+      .table table,
+      .table-container table {
+        border-collapse: collapse;
+        min-width: 600px;
+        background: #ffffff;
+      }
+      .table th,
+      .table td,
+      .table-container th,
+      .table-container td {
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+        white-space: nowrap;
+        text-align: center;
+        font-size: 12px;
+        font-weight: normal;
+      }
+      #user-dictionary-help h3 {
+        color: #333;
+        font-size: 16px;
+        margin-top: 30px;
+        margin-bottom: 10px;
+      }
+      .example {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        background: #222222;
+        color: #ffffff;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .step {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="user-dictionary-help">
+      <div class="step">
+        <p><strong>1. ユーザー辞書ファイルの作成</strong></p>
+        <p>
+          ユーザー辞書はCSV形式で作成します。使用するUnidicと同じ構成にする必要があります。例えば、現代書き言葉Unidicの構成は以下の通りです。
+        </p>
+        <div class="table-container dictionary-structure-table">
+          <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+              <tr>
+                <th>1</th>
+                <th>2</th>
+                <th>3</th>
+                <th>4</th>
+                <th>5</th>
+                <th>6</th>
+                <th>7</th>
+                <th>8</th>
+                <th>9</th>
+                <th>10</th>
+                <th>11</th>
+                <th>12</th>
+                <th>13</th>
+                <th>14</th>
+                <th>15</th>
+                <th>16</th>
+                <th>17</th>
+                <th>18</th>
+                <th>19</th>
+                <th>20</th>
+                <th>21</th>
+                <th>22</th>
+                <th>23</th>
+                <th>24</th>
+                <th>25</th>
+                <th>26</th>
+                <th>27</th>
+                <th>28</th>
+                <th>29</th>
+                <th>30</th>
+                <th>31</th>
+                <th>32</th>
+                <th>33</th>
+              </tr>
+              <tr>
+                <th>surface</th>
+                <th>left-id</th>
+                <th>right-id</th>
+                <th>cost</th>
+                <th>pos1</th>
+                <th>pos2</th>
+                <th>pos3</th>
+                <th>pos4</th>
+                <th>cType</th>
+                <th>cForm</th>
+                <th>lForm</th>
+                <th>lemma</th>
+                <th>orth</th>
+                <th>pron</th>
+                <th>orthBase</th>
+                <th>pronBase</th>
+                <th>goshu</th>
+                <th>iType</th>
+                <th>iForm</th>
+                <th>fType</th>
+                <th>fForm</th>
+                <th>iConType</th>
+                <th>fConType</th>
+                <th>lType</th>
+                <th>kana</th>
+                <th>kanaBase</th>
+                <th>form</th>
+                <th>formBase</th>
+                <th>aType</th>
+                <th>aConType</th>
+                <th>aModType</th>
+                <th>lid</th>
+                <th>lemma_id</th>
+              </tr>
+              <tr>
+                <th>表層形</th>
+                <th>左文脈ID</th>
+                <th>右文脈ID</th>
+                <th>コスト</th>
+                <th>品詞大分類</th>
+                <th>品詞中分類</th>
+                <th>品詞小分類</th>
+                <th>品詞細分類</th>
+                <th>活用型</th>
+                <th>活用形</th>
+                <th>語彙素読み</th>
+                <th>語彙素</th>
+                <th>書字形出現形</th>
+                <th>発音形出現形</th>
+                <th>書字形基本形</th>
+                <th>発音形基本形</th>
+                <th>語種</th>
+                <th>語頭変化型</th>
+                <th>語頭変化形</th>
+                <th>語末変化型</th>
+                <th>語末変化形</th>
+                <th>語頭変化結合型</th>
+                <th>語末変化結合型</th>
+                <th>語彙素類</th>
+                <th>仮名形出現形</th>
+                <th>仮名形基本形</th>
+                <th>語形出現形</th>
+                <th>語形基本形</th>
+                <th>アクセント型</th>
+                <th>アクセント結合型</th>
+                <th>アクセント修飾型</th>
+                <th>語彙表ID</th>
+                <th>語彙素ID</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <p>
+          例：人名の追加<br />
+          「夏目漱石」という語を固有名詞として追加する場合の例です。1行目のヘッダー行は説明のためのもので、実際のCSVファイルでは削除して含めないようにします。UTF-8で保存します。
+        </p>
+        <div class="table-container example-table">
+          <table border="1" cellpadding="4" cellspacing="0">
+            <thead>
+              <tr>
+                <th>表層形</th>
+                <th>左文脈ID</th>
+                <th>右文脈ID</th>
+                <th>コスト</th>
+                <th>品詞大分類</th>
+                <th>品詞中分類</th>
+                <th>品詞小分類</th>
+                <th>品詞細分類</th>
+                <th>活用型</th>
+                <th>活用形</th>
+                <th>語彙素読み</th>
+                <th>語彙素</th>
+                <th>書字形出現形</th>
+                <th>発音形出現形</th>
+                <th>書字形基本形</th>
+                <th>発音形基本形</th>
+                <th>語種</th>
+                <th>語頭変化型</th>
+                <th>語頭変化形</th>
+                <th>語末変化型</th>
+                <th>語末変化形</th>
+                <th>語頭変化結合型</th>
+                <th>語末変化結合型</th>
+                <th>語彙素類</th>
+                <th>仮名形出現形</th>
+                <th>仮名形基本形</th>
+                <th>語形出現形</th>
+                <th>語形基本形</th>
+                <th>アクセント型</th>
+                <th>アクセント結合型</th>
+                <th>アクセント修飾型</th>
+                <th>語彙表ID</th>
+                <th>語彙素ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>夏目漱石</td>
+                <td>5000</td>
+                <td>5000</td>
+                <td>8000</td>
+                <td>名詞</td>
+                <td>固有名詞</td>
+                <td>人名</td>
+                <td>名</td>
+                <td>*</td>
+                <td>*</td>
+                <td>ナツメソーセキ</td>
+                <td>ナツメソーセキ</td>
+                <td>夏目漱石</td>
+                <td>ナツメソーセキ</td>
+                <td>夏目漱石</td>
+                <td>ナツメソーセキ</td>
+                <td>固</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>ナツメソーセキ</td>
+                <td>ナツメソーセキ</td>
+                <td>ナツメソーセキ</td>
+                <td>ナツメソーセキ</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+                <td>*</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>
+            左文脈ID, 右文脈ID:
+            <br />値の調整が必要ですが、使用するUnidicの値を参考にできます。UniDic（フルパッケージ版）フォルダ内にあるlex.csvで類似語を検索し、そのIDの値を試す方法があります。
+            lex.csvは容量が大きいため適切なviewerを使用します。
+          </li>
+          <li>
+            コスト:
+            <br />ユーザー辞書の語を優先的に選択させるには、小さな値を設定します。こちらもlex.csvで類似語を検索し、そのコストの値を参考にできます。
+          </li>
+        </ul>
+      </div>
+      <div class="step">
+        <p><strong>2. ユーザー辞書ファイルのコンパイル</strong></p>
+        <p>
+          作成したCSVファイルを辞書ファイル(.dic)にコンパイルします。コマンドプロンプトまたは
+          PowerShell
+          で次のコマンドを実行します（.csvと.dicのファイル名は任意）。
+        </p>
+        <div class="example">
+          <code
+            >mecab-dict-index -d [UniDicのフォルダ(dicrcが格納されたフォルダ)]
+            -u [ユーザー辞書(.dic)の出力先] -f utf-8 -t utf-8
+            [ユーザー辞書(.csv)]</code
+          >
+        </div>
+        <p>絶対パスで指定する例：</p>
+        <div class="example">
+          <code
+            >mecab-dict-index -d "C:/Users/[username]/unidic-cwj-202302" -u
+            "C:/Users/[username]/user_cwj.dic" -f utf-8 -t utf-8
+            "C:/Users/[username]/user_cwj.csv"</code
+          >
+        </div>
+      </div>
+      <div class="step">
+        <p><strong>3. ユーザー辞書ファイルの設定</strong></p>
+        <p>
+          ユーザー辞書を設定するには、設定タブにおいて、コンパイル時に指定したdicrcが「カスタム辞書」としてあらかじめ選択されている必要があります。
+          そのうえで .dic ファイルを「ユーザー辞書」として選択してください。
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
