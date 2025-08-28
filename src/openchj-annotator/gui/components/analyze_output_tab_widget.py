@@ -52,7 +52,7 @@ class AnalyzeOutputTabWidget(QWidget):
         button_layout.setSpacing(5)
         button_layout.addStretch()
 
-        self.download_button = QPushButton("ダウンロード")
+        self.download_button = QPushButton("出力")
         apply_button_style(self.download_button, "secondary")
         self.download_button.setFixedWidth(90)
         self.download_button.setEnabled(False)

@@ -601,7 +601,7 @@ class AnalysisController:
             and not self.main_window.current_result_data
         ):
             QMessageBox.warning(
-                self.main_window, "", "ダウンロードする解析結果がありません。"
+                self.main_window, "", "出力する解析結果がありません。"
             )
             return
 
@@ -660,9 +660,9 @@ class AnalysisController:
 
                 if is_custom_dir:
                     msg_box = QMessageBox(self.main_window)
-                    msg_box.setWindowTitle("ダウンロード完了")
+                    msg_box.setWindowTitle("出力完了")
                     msg_box.setText(
-                        f"{success_count}個のファイルを設定出力先にダウンロードしました"
+                        f"{success_count}個のファイルを設定出力先に出力しました"
                     )
                     msg_box.setIcon(QMessageBox.Information)
                     msg_box.setStandardButtons(QMessageBox.Ok)
@@ -670,9 +670,9 @@ class AnalysisController:
                     msg_box.exec_()
                 else:
                     msg_box = QMessageBox(self.main_window)
-                    msg_box.setWindowTitle("ダウンロード完了")
+                    msg_box.setWindowTitle("出力完了")
                     msg_box.setText(
-                        f"{success_count}個のファイルのダウンロードが完了しました"
+                        f"{success_count}個のファイルの出力が完了しました"
                     )
                     msg_box.setIcon(QMessageBox.Information)
                     msg_box.setStandardButtons(QMessageBox.Ok)
@@ -713,16 +713,16 @@ class AnalysisController:
 
                 if is_custom_dir:
                     msg_box = QMessageBox(self.main_window)
-                    msg_box.setWindowTitle("ダウンロード完了")
-                    msg_box.setText("設定出力先へダウンロードしました")
+                    msg_box.setWindowTitle("出力完了")
+                    msg_box.setText("設定出力先へ出力しました")
                     msg_box.setIcon(QMessageBox.Information)
                     msg_box.setStandardButtons(QMessageBox.Ok)
                     self._style_message_box_buttons(msg_box)
                     msg_box.exec_()
                 else:
                     msg_box = QMessageBox(self.main_window)
-                    msg_box.setWindowTitle("ダウンロード完了")
-                    msg_box.setText("ダウンロードが完了しました")
+                    msg_box.setWindowTitle("出力完了")
+                    msg_box.setText("出力が完了しました")
                     msg_box.setIcon(QMessageBox.Information)
                     msg_box.setStandardButtons(QMessageBox.Ok)
                     self._style_message_box_buttons(msg_box)
