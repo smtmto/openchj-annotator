@@ -2,8 +2,14 @@ from typing import Optional
 
 from gui.styles import apply_frame_style, apply_input_style, apply_label_style
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QLineEdit,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from config import Config
 

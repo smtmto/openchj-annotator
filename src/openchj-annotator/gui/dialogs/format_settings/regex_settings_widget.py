@@ -4,13 +4,26 @@ from typing import Any, Dict, Optional
 
 from gui.custom_widgets import CustomCheckBox
 from gui.dialogs.regex_help_dialog import show_regex_help_dialog
-from gui.styles import (HELP_BUTTON_FIXED_SIZE, HELP_BUTTON_STYLESHEET,
-                        apply_button_style, apply_checkbox_style,
-                        apply_input_style, apply_label_style,
-                        apply_regex_settings_style)
+from gui.styles import (
+    HELP_BUTTON_FIXED_SIZE,
+    HELP_BUTTON_STYLESHEET,
+    apply_button_style,
+    apply_checkbox_style,
+    apply_input_style,
+    apply_label_style,
+    apply_regex_settings_style,
+)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-                               QMessageBox, QPushButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 from utils.path_manager import get_resource_path
 
 from config import Config

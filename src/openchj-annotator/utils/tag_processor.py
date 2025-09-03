@@ -13,7 +13,9 @@ class TagProcessor:
     def save_config(self):
         return self.config.copy()
 
-    def process_text(self, text: str, temp_config=None) -> Tuple[str, List[Dict[str, Any]]]:
+    def process_text(
+        self, text: str, temp_config=None
+    ) -> Tuple[str, List[Dict[str, Any]]]:
         original_text = text
         detected_special_tags: List[Dict[str, Any]] = []
 
@@ -28,7 +30,9 @@ class TagProcessor:
 
         all_matches_with_config = []
 
-        for pattern_idx, pattern_config in enumerate(config_to_use.get("tag_patterns", [])):
+        for pattern_idx, pattern_config in enumerate(
+            config_to_use.get("tag_patterns", [])
+        ):
             if not isinstance(pattern_config, dict):
                 logging.warning(
                     f"TagProcessor.process_text: Skipping invalid pattern_config (not a dict) at index {pattern_idx}."
@@ -93,7 +97,9 @@ class TagProcessor:
         non_overlapping_matches = []
         last_char_end = -1
         for match_data_tuple in all_matches_with_config:
-            char_start, char_end, original_tag_text, sf_conf, p_config_lambda = match_data_tuple
+            char_start, char_end, original_tag_text, sf_conf, p_config_lambda = (
+                match_data_tuple
+            )
             if char_start >= last_char_end:
                 non_overlapping_matches.append(match_data_tuple)
                 last_char_end = char_end

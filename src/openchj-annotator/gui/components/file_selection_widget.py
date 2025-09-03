@@ -1,10 +1,22 @@
 import os
 
-from gui.styles import (apply_button_style, apply_input_style,
-                        apply_label_style, apply_message_box_style)
+from gui.styles import (
+    apply_button_style,
+    apply_input_style,
+    apply_label_style,
+    apply_message_box_style,
+)
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QLineEdit,
-                               QMessageBox, QPushButton, QSizePolicy, QWidget)
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QWidget,
+)
 
 
 class FileSelectionWidget(QWidget):
@@ -34,21 +46,26 @@ class FileSelectionWidget(QWidget):
         self.input_entry.setMinimumWidth(200)
         self.input_entry.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.input_entry.setPlaceholderText("ファイルまたはフォルダを選択してください")
+        self.input_entry.setReadOnly(False)
+        self.input_entry.textChanged.connect(self._on_text_changed)
         layout.addWidget(self.input_entry)
 
-        browse_file_button = QPushButton("ファイル選択")
-        apply_button_style(browse_file_button, "secondary")
-        browse_file_button.setFixedWidth(90)
-        browse_file_button.clicked.connect(self.browse_file)
-        layout.addWidget(browse_file_button)
+        self.browse_file_button = QPushButton("ファイル選択")
+        apply_button_style(self.browse_file_button, "secondary")
+        self.browse_file_button.setFixedWidth(90)
+        self.browse_file_button.clicked.connect(self.browse_file)
+        layout.addWidget(self.browse_file_button)
 
-        browse_folder_button = QPushButton("フォルダ選択")
-        apply_button_style(browse_folder_button, "secondary")
-        browse_folder_button.setFixedWidth(90)
-        browse_folder_button.clicked.connect(self.browse_folder)
-        layout.addWidget(browse_folder_button)
+        self.browse_folder_button = QPushButton("フォルダ選択")
+        apply_button_style(self.browse_folder_button, "secondary")
+        self.browse_folder_button.setFixedWidth(90)
+        self.browse_folder_button.clicked.connect(self.browse_folder)
+        layout.addWidget(self.browse_folder_button)
 
     def browse_file(self):
+        if self.input_entry.text().strip():
+            return
+
         filenames, _ = QFileDialog.getOpenFileNames(
             self,
             "ファイルを選択",
@@ -110,6 +127,8 @@ class FileSelectionWidget(QWidget):
                     self.preview_requested.emit(filenames[0])
 
     def browse_folder(self):
+        if self.input_entry.text().strip():
+            return
 
         from PySide6.QtCore import QTimer
 
@@ -151,3 +170,27 @@ class FileSelectionWidget(QWidget):
 
     def _style_message_box_buttons(self, msg_box):
         apply_message_box_style(msg_box)
+
+    def _on_text_changed(self):
+        self.update_button_states()
+
+    def update_button_states(self, external_text=""):
+        file_path_text = self.input_entry.text().strip()
+        has_any_text = bool(file_path_text) or bool(external_text.strip())
+
+        self.browse_file_button.setEnabled(not has_any_text)
+        self.browse_folder_button.setEnabled(not has_any_text)
+
+        if has_any_text:
+            from gui.styles import apply_button_style
+
+            apply_button_style(self.browse_file_button, "disabled")
+            apply_button_style(self.browse_folder_button, "disabled")
+        else:
+            from gui.styles import apply_button_style
+
+            apply_button_style(self.browse_file_button, "secondary")
+            apply_button_style(self.browse_folder_button, "secondary")
+
+    def has_file_or_folder_selected(self):
+        return bool(self.selected_folder) or bool(self.batch_files)

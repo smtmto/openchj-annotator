@@ -6,8 +6,14 @@ from gui.styles import DEFAULT_FONT_FAMILY, apply_tab_style
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import (QFrame, QMainWindow, QMessageBox, QTabWidget,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QFrame,
+    QMainWindow,
+    QMessageBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 from utils.path_manager import get_resource_path
 
 from .components.analyze_output_tab_widget import AnalyzeOutputTabWidget
@@ -19,7 +25,7 @@ from .controllers.ui_controller import UIController
 class MainWindow(QMainWindow):
     def __init__(self, config=None):
         super().__init__()
-        self.setWindowTitle("OpenCHJ形式形態論情報付与ツール")
+        self.setWindowTitle("OpenCHJAnnotator 0.6.0")
         self.setMinimumSize(600, 500)
         self.resize(940, 760)
         self.font_family = DEFAULT_FONT_FAMILY
@@ -105,11 +111,14 @@ class MainWindow(QMainWindow):
         self.analyze_tab.analyze_clicked.connect(self.start_analysis)
         self.analyze_tab.download_clicked.connect(self.download_result)
         self.analyze_tab.clear_clicked.connect(self.clear_all_content)
+        self.analyze_tab.output_format_changed.connect(
+            self.handle_output_format_changed
+        )
 
     def _connect_settings_tab_signals(self):
         if not self.settings_tab:
             return
-        self.settings_tab.dictionary_settings_changed.connect(self.initialize_analyzer)
+        self.settings_tab.dictionary_changed.connect(lambda: self.initialize_analyzer())
         self.settings_tab.show_user_dict_help_requested.connect(
             self.show_user_dict_help
         )
@@ -140,9 +149,11 @@ class MainWindow(QMainWindow):
 
     def handle_file_selected(self, filenames):
         self.analysis_controller.handle_file_selected(filenames)
+        self.analyze_tab.text_areas_widget.set_input_text_readonly(True)
 
     def handle_folder_selected(self, folder_path):
         self.analysis_controller.handle_folder_selected(folder_path)
+        self.analyze_tab.text_areas_widget.set_input_text_readonly(True)
 
     def handle_preview_requested(self, file_path):
         try:
@@ -153,6 +164,7 @@ class MainWindow(QMainWindow):
 
     def handle_selection_cleared(self):
         self.ui_controller.handle_selection_cleared()
+        self.analyze_tab.text_areas_widget.set_input_text_readonly(False)
 
     def handle_input_text_changed(self):
         self.ui_controller.handle_input_text_changed()
@@ -164,7 +176,11 @@ class MainWindow(QMainWindow):
         self.analysis_controller.start_analysis()
 
     def download_result(self):
-        self.analysis_controller.download_result()
+        output_format = self.analyze_tab.get_output_format()
+        self.analysis_controller.download_result(output_format)
+
+    def handle_output_format_changed(self, format_type):
+        self.analysis_controller.handle_output_format_changed(format_type)
 
     def clear_all_content(self):
         self.analyze_tab.setEnabled(False)
@@ -183,6 +199,8 @@ class MainWindow(QMainWindow):
             self.ui_controller.preview_timer.stop()
             self.ui_controller.preview_timer.deleteLater()
             self.ui_controller.preview_timer = None
+
+        self.analyze_tab.text_areas_widget.set_input_text_readonly(False)
 
         import gc
 

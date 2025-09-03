@@ -75,14 +75,18 @@ class AnalysisWorker(QThread):
             self.stop_animation.emit()
 
             if not results:
-                self.error.emit("解析結果が空です。形態素解析に失敗した可能性があります。")
+                self.error.emit(
+                    "解析結果が空です。形態素解析に失敗した可能性があります。"
+                )
                 return
 
             self.start_animation.emit("結果をフォーマットしています")
             from utils.file_utils import extract_filename_from_path
 
             filename = (
-                extract_filename_from_path(self.text_source) if self.text_source else "preview.txt"
+                extract_filename_from_path(self.text_source)
+                if self.text_source
+                else "manual_input.txt"
             )
             result_text = self.analyzer.format_as_tsv(results, filename)
             self.stop_animation.emit()

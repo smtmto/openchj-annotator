@@ -90,8 +90,7 @@ class BatchAnalysisWorker(QThread):
 
                     fd, temp_path = tempfile.mkstemp(suffix=".txt")
                     os.close(fd)
-                    from utils.file_utils import (read_text_file,
-                                                  write_text_file)
+                    from utils.file_utils import read_text_file, write_text_file
 
                     try:
 
@@ -119,9 +118,7 @@ class BatchAnalysisWorker(QThread):
                         logging.error(
                             f"Encoding error during batch processing: {ude} - {filename}"
                         )
-                        results.append(
-                            (filename, False, f"Encoding error: {str(ude)}")
-                        )
+                        results.append((filename, False, f"Encoding error: {str(ude)}"))
                     finally:
 
                         self.stop_animation.emit()

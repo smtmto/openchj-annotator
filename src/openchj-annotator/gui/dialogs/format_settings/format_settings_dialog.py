@@ -3,8 +3,14 @@ from typing import Optional
 
 from gui.styles import apply_button_style, apply_dialog_style
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QPushButton, QSizePolicy,
-                               QSpacerItem, QVBoxLayout)
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QPushButton,
+    QSizePolicy,
+    QSpacerItem,
+    QVBoxLayout,
+)
 
 from config import Config
 

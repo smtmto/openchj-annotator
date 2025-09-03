@@ -12,7 +12,7 @@
 ### 必要条件
 
 - OS: Windows 11
-- ディスク容量: 約 210MB
+- ディスク容量: 約 220MB
 
 ## 導入
 
@@ -106,14 +106,14 @@
 
 ## バージョン情報
 
-- Version: 0.5.1
-- Release Date: 2025-08-29
+- Version: 0.6.0
+- Release Date: 2025-09-03
 
 ### 引用
 
 本アプリケーションを研究等で参照される場合の引用例は、以下の通りです。
 
-Matsumoto, S. (2025). OpenCHJAnnotator (バージョン 0.5.1). https://github.com/smtmto/openchj-annotator
+Matsumoto, S. (2025). OpenCHJAnnotator (バージョン 0.6.0). https://github.com/smtmto/openchj-annotator
 
 関連論文：  
 Matsumoto, S. (2025). 短単位検索システムと OpenCHJ 形式形態論情報付与ツールの構築. 言語資源ワークショップ 2025 (LRW2025), Online. https://doi.org/10.5281/zenodo.16994066

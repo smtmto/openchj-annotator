@@ -25,7 +25,9 @@ class AozoraSettingsWidget(BaseSettingsWidget):
         self.frame.setFixedHeight(90)
         frame_layout = self.frame.layout()
 
-        self.aozora_check = CustomCheckBox("青空文庫形式のテキストから注記・空白を一括除去する")
+        self.aozora_check = CustomCheckBox(
+            "青空文庫形式のテキストから注記・空白を一括除去する"
+        )
         apply_checkbox_style(self.aozora_check)
         frame_layout.addWidget(self.aozora_check)
 

@@ -1,7 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import (QApplication, QDialog, QLabel, QSizePolicy,
-                               QVBoxLayout)
+from PySide6.QtWidgets import QApplication, QDialog, QLabel, QSizePolicy, QVBoxLayout
 
 
 class ProgressDialog(QDialog):

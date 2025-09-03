@@ -1,5 +1,8 @@
-from gui.styles import (apply_frame_style, apply_scroll_area_style,
-                        apply_scroll_content_style)
+from gui.styles import (
+    apply_frame_style,
+    apply_scroll_area_style,
+    apply_scroll_content_style,
+)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget
 
@@ -9,7 +12,7 @@ from .subcorpus_settings_widget import SubcorpusSettingsWidget
 
 
 class SettingsTabWidget(QWidget):
-    dictionary_settings_changed = Signal()
+    dictionary_changed = Signal(str)
     show_user_dict_help_requested = Signal()
     open_download_page_requested = Signal()
 
@@ -56,7 +59,9 @@ class SettingsTabWidget(QWidget):
         separator2.setFixedHeight(1)
         content_layout.addWidget(separator2)
 
-        self.output_settings_frame = OutputSettingsFrame(scroll_content, self.config)
+        self.output_settings_frame = OutputSettingsFrame(
+            scroll_content, self.config, self.dict_settings_widget
+        )
         content_layout.addWidget(self.output_settings_frame)
 
         content_layout.addStretch(1)
@@ -67,8 +72,8 @@ class SettingsTabWidget(QWidget):
         main_layout.addWidget(scroll_area)
 
     def _connect_signals(self):
-        self.dict_settings_widget.dictionary_settings_changed.connect(
-            self.dictionary_settings_changed.emit
+        self.dict_settings_widget.dictionary_changed.connect(
+            self.dictionary_changed.emit
         )
         self.dict_settings_widget.show_user_dict_help_requested.connect(
             self.show_user_dict_help_requested.emit

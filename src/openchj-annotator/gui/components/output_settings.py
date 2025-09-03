@@ -4,25 +4,59 @@ import re
 from typing import Optional
 
 from gui.custom_widgets import CustomCheckBox
-from gui.styles import (apply_button_style, apply_checkbox_style,
-                        apply_combobox_style, apply_input_style,
-                        apply_label_style, get_combo_style)
+from gui.styles import (
+    apply_button_style,
+    apply_checkbox_style,
+    apply_combobox_style,
+    apply_input_style,
+    apply_label_style,
+    get_combo_style,
+)
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QComboBox, QFileDialog, QGridLayout, QGroupBox,
-                               QHBoxLayout, QLabel, QLineEdit, QPushButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFileDialog,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 from utils.file_utils import get_downloads_directory
 
 from config import Config
 
+from .dictionary_settings_widget import DictionarySettingsWidget
+
 
 class OutputSettingsFrame(QWidget):
-    def __init__(self, parent, config: Config):
+    def __init__(
+        self,
+        parent: QWidget,
+        config: Config,
+        dictionary_settings: DictionarySettingsWidget,
+    ):
         super().__init__(parent)
         self.config = config
+        self.dictionary_settings = dictionary_settings
         self._loading_settings = False
+        self._last_default_suffix = None
         self.setup_ui()
         self.load_settings()
+        self._last_default_suffix = self._get_default_suffix()
+        self.dictionary_settings.dictionary_changed.connect(self.update_default_suffix)
+        self._update_suffix_buttons_state()
+
+    def _update_suffix_buttons_state(self):
+        current_text = self.suffix_input.text()
+        date_tail_pattern = r"(_(YYYYMMDD(_HHMMSS)?|HHMMSS|\d{8}((_|\-)\d{6})?|\d{6}))$"
+        has_date = re.search(date_tail_pattern, current_text, re.IGNORECASE) is not None
+        self.clear_suffix_button.setEnabled(has_date)
+        self.add_date_button.setEnabled(not has_date)
 
     def clear_directory(self):
 
@@ -82,27 +116,42 @@ class OutputSettingsFrame(QWidget):
         self.prefix_input.setFixedHeight(24)
         apply_input_style(self.prefix_input)
         self.prefix_input.textChanged.connect(self.on_settings_changed)
-        filename_layout.addWidget(self.prefix_input)
+        self.prefix_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        filename_layout.addWidget(self.prefix_input, 1, Qt.AlignVCenter)
 
         filename_label = QLabel("{入力ファイル名}")
         apply_label_style(filename_label, "filename")
-        filename_layout.addWidget(filename_label, 0, Qt.AlignBottom)
+        filename_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        filename_layout.addWidget(filename_label, 0, Qt.AlignVCenter)
 
         self.suffix_input = QLineEdit()
-        self.suffix_input.setPlaceholderText("サフィックス（デフォルト: _analyzed）")
+        self.suffix_input.setPlaceholderText(
+            f"サフィックス（デフォルト: {self._get_default_suffix()}）"
+        )
         self.suffix_input.setFixedHeight(24)
         apply_input_style(self.suffix_input)
+        self.suffix_input.setReadOnly(True)
+        self.suffix_input.setFocusPolicy(Qt.NoFocus)
+        self.suffix_input.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.suffix_input.textChanged.connect(self._on_suffix_changed)
-        filename_layout.addWidget(self.suffix_input)
+        self.suffix_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        filename_layout.addWidget(self.suffix_input, 4, Qt.AlignVCenter)
 
         self.add_date_button = QPushButton("日時追加")
+        self.add_date_button.setFixedHeight(24)
         apply_button_style(self.add_date_button, "config")
         self.add_date_button.clicked.connect(self.add_datetime_to_suffix)
         filename_layout.addWidget(self.add_date_button, 0, Qt.AlignVCenter)
+
+        self.clear_suffix_button = QPushButton("クリア")
+        self.clear_suffix_button.setFixedHeight(24)
+        apply_button_style(self.clear_suffix_button, "secondary")
+        self.clear_suffix_button.clicked.connect(self.clear_datetime_from_suffix)
+        filename_layout.addWidget(self.clear_suffix_button, 0, Qt.AlignVCenter)
         filename_layout.setAlignment(Qt.AlignCenter)
         naming_layout.addLayout(filename_layout)
 
-        self.filename_preview = QLabel("例: input.txt → input_analyzed.txt")
+        self.filename_preview = QLabel()
         self.filename_preview.setFixedHeight(20)
         apply_label_style(self.filename_preview)
         naming_layout.addWidget(self.filename_preview, 0, Qt.AlignBottom)
@@ -156,7 +205,6 @@ class OutputSettingsFrame(QWidget):
         output_dir_path_layout.addWidget(self.directory_input, 0, 1)
 
         self.browse_button = QPushButton("選択")
-        self.browse_button.setFixedHeight(24)
         apply_button_style(self.browse_button, "secondary")
         self.browse_button.clicked.connect(self.browse_directory)
 
@@ -167,7 +215,6 @@ class OutputSettingsFrame(QWidget):
         output_dir_path_layout.addWidget(browse_container, 0, 2, Qt.AlignCenter)
 
         self.clear_button = QPushButton("クリア")
-        self.clear_button.setFixedHeight(24)
         apply_button_style(self.clear_button, "secondary")
         self.clear_button.clicked.connect(self.clear_directory)
 
@@ -177,12 +224,17 @@ class OutputSettingsFrame(QWidget):
         clear_container_layout.addWidget(self.clear_button, 0, Qt.AlignCenter)
         output_dir_path_layout.addWidget(clear_container, 0, 3, Qt.AlignCenter)
         directory_layout.addLayout(output_dir_path_layout)
+        try:
+            dict_btn_h = self.dictionary_settings.dic_entry.sizeHint().height()
+            self.browse_button.setFixedHeight(dict_btn_h)
+            self.clear_button.setFixedHeight(dict_btn_h)
+        except Exception:
+            pass
         layout.addWidget(directory_group)
         layout.addStretch(1)
 
     def _get_default_suffix(self) -> str:
-        default_output_settings = Config.DEFAULT_CONFIG.get("output_settings", {})
-        return default_output_settings.get("suffix", "_analyzed")
+        return self.dictionary_settings.get_current_suffix()
 
     def _custom_show_popup(self):
         self._loading_settings = True
@@ -235,8 +287,15 @@ class OutputSettingsFrame(QWidget):
                     settings["default_directory"] = get_downloads_directory()
 
             self.prefix_input.setText(settings.get("prefix", ""))
-            loaded_suffix = settings.get("suffix", self._get_default_suffix())
+
+            loaded_suffix = settings.get("suffix")
+            if loaded_suffix is None:
+                loaded_suffix = self._get_default_suffix()
+
             self.suffix_input.setText(loaded_suffix)
+            self.suffix_input.setPlaceholderText(
+                f"サフィックス（デフォルト: {self._get_default_suffix()}）"
+            )
 
             self.include_subfolders_checkbox.setChecked(
                 settings.get("include_subfolders", False)
@@ -315,6 +374,7 @@ class OutputSettingsFrame(QWidget):
             self.directory_input.blockSignals(False)
             self.output_dir_combo.blockSignals(False)
             self.update_filename_preview()
+            self._update_suffix_buttons_state()
         finally:
             self._loading_settings = False
 
@@ -399,8 +459,8 @@ class OutputSettingsFrame(QWidget):
         if not suffix_to_display:
             suffix_to_display = self._get_default_suffix()
 
-        example = f"入力ファイル名:　ABC.txt　→　出力ファイル名:　{prefix}ABC{suffix_to_display}.txt"
-        self.filename_preview.setText(f"{example}")
+        example = f"出力ファイル名:　{prefix}(入力ファイル名){suffix_to_display}.txt"
+        self.filename_preview.setText(example)
 
     def _on_suffix_changed(self, text: str):
         if self._loading_settings:
@@ -420,27 +480,50 @@ class OutputSettingsFrame(QWidget):
         self.config.config["output_settings"] = current_settings
         self.config.save()
         self.update_filename_preview()
+        self._update_suffix_buttons_state()
+
+    def update_default_suffix(self, new_suffix: str):
+        self._loading_settings = True
+        self.suffix_input.setPlaceholderText(
+            f"サフィックス（デフォルト: {new_suffix}）"
+        )
+
+        current_text = self.suffix_input.text()
+
+        date_tail_pattern = r"(_(YYYYMMDD(_HHMMSS)?|HHMMSS|\d{8}((_|\-)\d{6})?|\d{6}))$"
+        m = re.search(date_tail_pattern, current_text)
+        if m:
+            date_tail = m.group(1)
+            self.suffix_input.setText(new_suffix + date_tail)
+        elif not current_text or (
+            self._last_default_suffix is not None
+            and current_text == self._last_default_suffix
+        ):
+            self.suffix_input.setText(new_suffix)
+
+        self._last_default_suffix = new_suffix
+
+        self.update_filename_preview()
+        self._loading_settings = False
+        self._on_suffix_changed(self.suffix_input.text())
+
+    def clear_datetime_from_suffix(self):
+        base_default = self._get_default_suffix()
+        self.suffix_input.setText(base_default)
+        self._on_suffix_changed(self.suffix_input.text())
 
     def add_datetime_to_suffix(self):
         current_suffix_in_input = self.suffix_input.text()
-        datetime_pattern = r"(_|\b)(YYYYMMDD(_HHMMSS)?|HHMMSS|\d{8}((_|\-)\d{6})?|\d{6})(\b|_)"
-        base_suffix = current_suffix_in_input if current_suffix_in_input else self._get_default_suffix()
+        base_suffix = (
+            current_suffix_in_input
+            if current_suffix_in_input
+            else self._get_default_suffix()
+        )
 
-        if re.search(datetime_pattern, base_suffix, re.IGNORECASE):
+        date_tail_pattern = r"(_(YYYYMMDD(_HHMMSS)?|HHMMSS|\d{8}((_|\-)\d{6})?|\d{6}))$"
+        if re.search(date_tail_pattern, base_suffix, re.IGNORECASE):
             return
 
         date_format_placeholder = "_YYYYMMDD_HHMMSS"
         new_suffix = base_suffix + date_format_placeholder
         self.suffix_input.setText(new_suffix)
-
-    def update_combobox_text(self):
-        settings = self.config.config.get("output_settings", {})
-        output_dir = settings.get("output_directory", "")
-
-        if self.output_dir_combo.count() > 1:
-            if output_dir:
-                self.output_dir_combo.setItemText(
-                    1, f"ユーザー設定出力先 ({output_dir})"
-                )
-            else:
-                self.output_dir_combo.setItemText(1, "ユーザー設定出力先（未指定）")

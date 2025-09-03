@@ -1,11 +1,23 @@
 import re
 
-from gui.styles import (apply_button_style, apply_message_box_style,
-                        apply_tag_special_settings_style)
+from gui.styles import (
+    apply_button_style,
+    apply_message_box_style,
+    apply_tag_special_settings_style,
+)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QComboBox, QFrame, QHBoxLayout, QLabel,
-                               QLineEdit, QMessageBox, QPushButton,
-                               QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class TagSpecialSettingsWidget(QWidget):

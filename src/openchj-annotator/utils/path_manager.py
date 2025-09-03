@@ -70,7 +70,7 @@ def get_effective_config_file_path(filename="config.json"):
                 "output_settings": {
                     "format": "TSV",
                     "prefix": "",
-                    "suffix": "_analyzed",
+                    "suffix": None,
                     "default_directory": "",
                     "output_directory": None,
                     "remove_full_space": False,
@@ -111,7 +111,6 @@ def get_resources_path():
             base_path = Path(sys.executable).parent
 
         resources_path = base_path / "resources"
-
 
         if resources_path.exists():
             return resources_path

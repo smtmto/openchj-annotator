@@ -2,23 +2,38 @@ import logging
 import os
 
 import fugashi
-from gui.styles import (apply_button_style, apply_combobox_style,
-                        apply_input_style, apply_label_style,
-                        apply_message_box_style, get_combo_style)
+from gui.styles import (
+    apply_button_style,
+    apply_combobox_style,
+    apply_input_style,
+    apply_label_style,
+    apply_message_box_style,
+    get_combo_style,
+)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QComboBox, QFileDialog, QGridLayout,
-                               QHBoxLayout, QLabel, QLineEdit, QMessageBox,
-                               QPushButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFileDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 from utils.file_utils import normalize_path
 
 
 class DictionarySettingsWidget(QWidget):
-    dictionary_settings_changed = Signal()
+    dictionary_changed = Signal(str)
     show_user_dict_help_requested = Signal()
     open_download_page_requested = Signal()
 
     def __init__(self, config, parent=None):
         super().__init__(parent)
+        self.dictionary_info = {}
         self.config = config
         self._calling_from_custom_clear = False
         self._setup_ui()
@@ -122,15 +137,24 @@ class DictionarySettingsWidget(QWidget):
 
     def update_dictionary_list(self):
         config_changed = self.check_dictionary_paths()
-        available_dict_items = {}
-        available_dict_items["UniDic-Lite（デフォルト）"] = "lite"
+
+        self.dictionary_info.clear()
+        self.dictionary_info["lite"] = {
+            "display_name": "UniDic-Lite（デフォルト）",
+            "suffix": "_unidic-lite-1.0.8",
+        }
+        available_dict_items = {self.dictionary_info["lite"]["display_name"]: "lite"}
 
         dic_path = self.config.get_unidic_path("dic")
-
         if dic_path and os.path.exists(dic_path):
-            display_name = self._get_dictionary_display_name(dic_path)
-
+            display_name, suffix = self._update_dictionary_info(dic_path)
+            if suffix and not suffix.startswith("_"):
+                suffix = f"_{suffix}"
             if display_name:
+                self.dictionary_info["dic"] = {
+                    "display_name": display_name,
+                    "suffix": suffix,
+                }
                 if display_name in available_dict_items:
                     display_name = f"{display_name} (カスタム)"
                 available_dict_items[display_name] = "dic"
@@ -158,7 +182,8 @@ class DictionarySettingsWidget(QWidget):
         self.active_dict_combo.blockSignals(False)
         self.toggle_controls()
         if config_changed:
-            self.dictionary_settings_changed.emit()
+            new_suffix = self.get_current_suffix()
+            self.dictionary_changed.emit(new_suffix)
 
     def on_active_dict_changed(self, text):
         new_key = "lite"
@@ -180,7 +205,8 @@ class DictionarySettingsWidget(QWidget):
         if self.config.get_active_dictionary() != new_key:
             self.config.set_active_dictionary(new_key)
             self.toggle_controls()
-            self.dictionary_settings_changed.emit()
+            new_suffix = self.get_current_suffix()
+            self.dictionary_changed.emit(new_suffix)
 
     def select_dictionary(self, dict_type):
         filename, _ = QFileDialog.getOpenFileName(
@@ -199,13 +225,56 @@ class DictionarySettingsWidget(QWidget):
                 self._style_message_box_buttons(msg_box)
                 msg_box.exec()
                 return
+
+            try:
+                readme_dir = os.path.dirname(filename)
+                readme_path = None
+                for f in os.listdir(readme_dir):
+                    if f.upper().startswith("README") and os.path.isfile(
+                        os.path.join(readme_dir, f)
+                    ):
+                        readme_path = os.path.join(readme_dir, f)
+                        break
+
+                if not readme_path:
+                    msg_box = QMessageBox(self)
+                    msg_box.setWindowTitle("エラー")
+                    msg_box.setText("辞書情報を取得できませんでした。")
+                    msg_box.setInformativeText(
+                        "dicrcファイルと同じフォルダにREADMEファイルがあるか確認してください。"
+                    )
+                    msg_box.setIcon(QMessageBox.Warning)
+                    msg_box.setStandardButtons(QMessageBox.Ok)
+                    self._style_message_box_buttons(msg_box)
+                    msg_box.exec()
+                    return
+
+                if readme_path:
+                    with open(readme_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        if any(
+                            keyword in content
+                            for keyword in ["上代語", "中古和文", "和歌"]
+                        ):
+                            msg_box = QMessageBox(self)
+                            msg_box.setWindowTitle("非対応辞書")
+                            msg_box.setText("このUniDicは動作対象外です。")
+                            msg_box.setIcon(QMessageBox.Warning)
+                            msg_box.setStandardButtons(QMessageBox.Ok)
+                            self._style_message_box_buttons(msg_box)
+                            msg_box.exec()
+                            return
+            except Exception as e:
+                logging.warning(f"Could not check dictionary README: {e}")
+
             try:
                 normalized_path = normalize_path(filename)
                 self.config.set_unidic_path(dict_type, normalized_path)
                 self.config.set_active_dictionary(dict_type)
                 self.config.save()
                 self.update_dictionary_list()
-                self.dictionary_settings_changed.emit()
+                new_suffix = self.get_current_suffix()
+                self.dictionary_changed.emit(new_suffix)
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle("成功")
                 msg_box.setText("カスタム辞書が設定されました。")
@@ -226,7 +295,8 @@ class DictionarySettingsWidget(QWidget):
                 if self.config.get_active_dictionary() == dict_type:
                     self.config.set_active_dictionary("lite")
                 self.update_dictionary_list()
-                self.dictionary_settings_changed.emit()
+                new_suffix = self.get_current_suffix()
+                self.dictionary_changed.emit(new_suffix)
 
     def clear_custom_dictionary(self):
         if not self.config.get_unidic_path("dic"):
@@ -253,7 +323,10 @@ class DictionarySettingsWidget(QWidget):
                 self.config.set_active_dictionary("lite")
             self.config.save()
             self.update_dictionary_list()
-            self.dictionary_settings_changed.emit()
+            default_suffix = self.dictionary_info.get("lite", {}).get(
+                "suffix", "_unidic-lite-1.0.8"
+            )
+            self.dictionary_changed.emit(default_suffix)
 
     def select_user_dictionary(self):
         filename, _ = QFileDialog.getOpenFileName(
@@ -296,7 +369,8 @@ class DictionarySettingsWidget(QWidget):
                 self.config.set_user_dictionary_path(normalized_path)
                 self.config.save()
                 self.toggle_controls()
-                self.dictionary_settings_changed.emit()
+                new_suffix = self.get_current_suffix()
+                self.dictionary_changed.emit(new_suffix)
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle("成功")
                 msg_box.setText("ユーザー辞書が設定されました。")
@@ -314,7 +388,8 @@ class DictionarySettingsWidget(QWidget):
                 msg_box.exec()
                 self.config.set_user_dictionary_path(None)
                 self.toggle_controls()
-                self.dictionary_settings_changed.emit()
+                new_suffix = self.get_current_suffix()
+                self.dictionary_changed.emit(new_suffix)
 
     def clear_user_dictionary(self):
         if (
@@ -338,7 +413,8 @@ class DictionarySettingsWidget(QWidget):
         self.config.set_user_dictionary_path(None)
         self.config.save()
         self.toggle_controls()
-        self.dictionary_settings_changed.emit()
+        new_suffix = self.get_current_suffix()
+        self.dictionary_changed.emit(new_suffix)
 
     def _style_message_box_buttons(self, msg_box):
         apply_message_box_style(msg_box)
@@ -353,16 +429,16 @@ class DictionarySettingsWidget(QWidget):
                 logging.warning("ユーザー辞書はliteでは使用できません")
                 return False
 
-            if os.path.isdir(dict_path):
-                dict_path_win = dict_path.replace("/", "\\")
-                options = f'-d "{dict_path_win}"'
-            elif os.path.isfile(dict_path) and os.path.basename(dict_path) == "dicrc":
-                dict_dir_win = os.path.dirname(dict_path).replace("/", "\\")
-                options = f'-d "{dict_dir_win}"'
-            elif os.path.isfile(dict_path):
-                dict_dir_win = os.path.dirname(dict_path).replace("/", "\\")
-                options = f'-d "{dict_dir_win}"'
-            else:
+            options = ""
+            if dict_path and isinstance(dict_path, str) and os.path.exists(dict_path):
+                if os.path.isdir(dict_path):
+                    dict_path_win = dict_path.replace("/", "\\")
+                    options = f'-d "{dict_path_win}"'
+                elif os.path.isfile(dict_path):
+                    dict_dir_win = os.path.dirname(dict_path).replace("/", "\\")
+                    options = f'-d "{dict_dir_win}"'
+
+            if not options:
                 logging.warning(f"システム辞書パスが見つかりません: {dict_path}")
                 return False
 
@@ -429,29 +505,51 @@ class DictionarySettingsWidget(QWidget):
         self.user_dict_clear_button.setEnabled(user_clear_enabled)
 
         if config_changed:
-            self.dictionary_settings_changed.emit()
+            new_suffix = self.get_current_suffix()
+            self.dictionary_changed.emit(new_suffix)
 
-    def _get_dictionary_display_name(self, dict_path):
-        if not dict_path or dict_path == "未設定" or not os.path.exists(dict_path):
-            return None
+    def _generate_english_suffix(self, readme_content: str) -> str:
+        from utils.dictionary_info import _generate_english_suffix_from_readme as gen
+
+        return gen(readme_content)
+
+    def _update_dictionary_info(self, dict_path):
+        if not dict_path or not os.path.exists(dict_path):
+            return "カスタム辞書", "unidic-custom"
         try:
             dicrc_dir = os.path.dirname(dict_path)
-            found_readme = None
+            readme_path = None
             for file in os.listdir(dicrc_dir):
                 if file.upper().startswith("README") and os.path.isfile(
                     os.path.join(dicrc_dir, file)
                 ):
-                    found_readme = os.path.join(dicrc_dir, file)
+                    readme_path = os.path.join(dicrc_dir, file)
                     break
 
-            if found_readme:
-                with open(found_readme, "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-                    if len(lines) >= 2:
-                        dict_name = lines[1].strip()
-                        return dict_name
-
+            if readme_path:
+                with open(readme_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    lines = content.splitlines()
+                    display_name = (
+                        lines[1].strip() if len(lines) >= 2 else "カスタム辞書"
+                    )
+                    english_suffix = self._generate_english_suffix(content)
+                    return display_name, english_suffix
         except Exception as e:
-            logging.error(f"Error getting dictionary display name: {e}")
+            logging.error(f"Error getting dictionary info: {e}")
 
-        return None
+        return "カスタム辞書", "unidic-custom"
+
+    def get_current_suffix(self) -> str:
+        active_key = self.config.get_active_dictionary()
+        base_suffix = self.dictionary_info.get(active_key, {}).get(
+            "suffix", "_unidic-lite-1.0.8"
+        )
+
+        if active_key == "lite":
+            return base_suffix
+
+        user_dict_path = self.config.get_user_dictionary_path()
+        if user_dict_path and os.path.exists(user_dict_path):
+            return f"{base_suffix}_ud"
+        return base_suffix

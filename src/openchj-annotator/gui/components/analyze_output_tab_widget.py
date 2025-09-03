@@ -1,8 +1,16 @@
 from typing import Dict, List, Optional
 
-from gui.styles import apply_button_style, get_minimal_style
+from gui.styles import DEFAULT_FONT_FAMILY, apply_button_style, get_minimal_style
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QHBoxLayout,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .file_selection_widget import FileSelectionWidget
 from .text_areas_widget import TextAreasWidget
@@ -19,6 +27,7 @@ class AnalyzeOutputTabWidget(QWidget):
     download_clicked = Signal()
     clear_clicked = Signal()
     processing_status_changed = Signal(bool, str)
+    output_format_changed = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -50,6 +59,24 @@ class AnalyzeOutputTabWidget(QWidget):
         button_layout = QHBoxLayout(button_section)
         button_layout.setContentsMargins(0, 5, 0, 10)
         button_layout.setSpacing(5)
+
+        self.output_format_group = QButtonGroup()
+        self.openchj_radio = QRadioButton("OpenCHJ形式")
+        self.simple_radio = QRadioButton("書字形出現形+語彙素+品詞")
+
+        self.openchj_radio.setChecked(True)
+        self.output_format_group.addButton(self.openchj_radio, 0)
+        self.output_format_group.addButton(self.simple_radio, 1)
+
+        self.output_format_group.buttonToggled.connect(self._on_output_format_changed)
+
+        radio_font = QFont(DEFAULT_FONT_FAMILY, 11)
+        self.openchj_radio.setFont(radio_font)
+        self.simple_radio.setFont(radio_font)
+
+        button_layout.addSpacing(10)
+        button_layout.addWidget(self.openchj_radio)
+        button_layout.addWidget(self.simple_radio)
         button_layout.addStretch()
 
         self.download_button = QPushButton("出力")
@@ -68,6 +95,15 @@ class AnalyzeOutputTabWidget(QWidget):
 
         layout.addWidget(button_section)
 
+        try:
+            target_h = self.text_areas_widget.analyze_button.sizeHint().height()
+            self.file_selection_widget.browse_file_button.setFixedHeight(target_h)
+            self.file_selection_widget.browse_folder_button.setFixedHeight(target_h)
+            self.download_button.setFixedHeight(target_h)
+            self.clear_button.setFixedHeight(target_h)
+        except Exception:
+            pass
+
     def _connect_signals(self):
         self.file_selection_widget.file_selected.connect(self.file_selected.emit)
         self.file_selection_widget.folder_selected.connect(self.folder_selected.emit)
@@ -80,6 +116,7 @@ class AnalyzeOutputTabWidget(QWidget):
         )
 
         self.text_areas_widget.input_text_changed.connect(self.input_text_changed.emit)
+        self.text_areas_widget.input_text_changed.connect(self._on_input_text_changed)
         self.text_areas_widget.format_settings_clicked.connect(
             self.format_settings_clicked.emit
         )
@@ -112,8 +149,10 @@ class AnalyzeOutputTabWidget(QWidget):
     def append_format_text(self, text: str):
         self.text_areas_widget.append_format_text(text)
 
-    def set_output_text(self, text):
-        self.text_areas_widget.set_output_text(text)
+    def set_output_text(self, text, format_type=None):
+        if format_type is None:
+            format_type = self.get_output_format()
+        self.text_areas_widget.set_output_text(text, format_type)
 
     def set_input_stats(self, text):
         self.text_areas_widget.set_input_stats(text)
@@ -178,3 +217,29 @@ class AnalyzeOutputTabWidget(QWidget):
         else:
             if self.get_input_text().strip():
                 self.set_analyze_button_enabled(True)
+
+    def _on_input_text_changed(self):
+        input_text = self.get_input_text()
+        self.file_selection_widget.update_button_states(input_text)
+
+        has_file_or_folder = self.file_selection_widget.has_file_or_folder_selected()
+        has_manual_text = bool(input_text.strip()) and not has_file_or_folder
+
+        if has_manual_text:
+            self.set_format_settings_button_enabled(True)
+
+        self.text_areas_widget.set_input_text_readonly(has_file_or_folder)
+
+    def _on_output_format_changed(self, button, checked):
+        if checked:
+            if button == self.openchj_radio:
+                self.output_format_changed.emit("openchj")
+            elif button == self.simple_radio:
+                self.output_format_changed.emit("simple")
+
+    def get_output_format(self):
+        if self.openchj_radio.isChecked():
+            return "openchj"
+        elif self.simple_radio.isChecked():
+            return "simple"
+        return "openchj"

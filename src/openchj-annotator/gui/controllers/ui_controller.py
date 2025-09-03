@@ -4,8 +4,7 @@ import platform
 import subprocess
 from typing import Dict, Optional
 
-from gui.dialogs.format_settings.format_settings_dialog import \
-    FormatSettingsDialog
+from gui.dialogs.format_settings.format_settings_dialog import FormatSettingsDialog
 from gui.dialogs.show_custom_dict_help import show_custom_dict_help_dialog
 from gui.dialogs.show_user_dict_help import show_user_dict_help_dialog
 from gui.styles import apply_button_style

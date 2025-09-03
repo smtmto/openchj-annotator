@@ -3,8 +3,14 @@ from pathlib import Path
 
 from gui.styles import TEXT_AREA_STYLE
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QMessageBox, QPushButton,
-                               QTextEdit, QVBoxLayout)
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QMessageBox,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+)
 
 
 class TextHelpDialog(QDialog):
@@ -28,7 +34,9 @@ class TextHelpDialog(QDialog):
             self._load_html(html_path)
         except Exception as e:
             logging.error(f"Error loading help file: {e}")
-            QMessageBox.critical(self, "エラー", f"ヘルプファイルの読み込みに失敗しました:\n{e}")
+            QMessageBox.critical(
+                self, "エラー", f"ヘルプファイルの読み込みに失敗しました:\n{e}"
+            )
 
         button_layout = QHBoxLayout()
         button_layout.addStretch()

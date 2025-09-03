@@ -6,8 +6,12 @@ from gui.workers.analysis_worker import AnalysisWorker
 from gui.workers.batch_analysis_worker import BatchAnalysisWorker
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QMessageBox
-from utils.file_utils import (get_downloads_directory, get_files_in_directory,
-                              read_text_file, replace_datetime_placeholder)
+from utils.file_utils import (
+    get_downloads_directory,
+    get_files_in_directory,
+    read_text_file,
+    replace_datetime_placeholder,
+)
 
 
 class AnalysisController:
@@ -435,7 +439,11 @@ class AnalysisController:
         selected_folder_path = self.main_window.analyze_tab.get_selected_folder()
 
         prefix = output_settings.get("prefix", "")
-        suffix = output_settings.get("suffix", "_analyzed") or "_analyzed"
+        suffix = output_settings.get("suffix")
+        if not suffix:
+            from utils.dictionary_info import get_dictionary_based_suffix
+
+            suffix = get_dictionary_based_suffix(self.main_window.config)
         suffix = replace_datetime_placeholder(suffix)
 
         if output_settings.get("use_custom_output_dir", False):
@@ -485,11 +493,17 @@ class AnalysisController:
 
         result_text = "\n".join(output_results_display)
 
-        self.main_window.analyze_tab.set_output_text(result_text)
+        current_format = self.main_window.analyze_tab.get_output_format()
 
-        self.main_window.current_result_text = result_text
+        display_text = result_text
+        if current_format == "simple":
+            display_text = self._extract_three_fields(result_text)
 
-        self.main_window.complete_result_text = None
+        self.main_window.analyze_tab.set_output_text(display_text, current_format)
+
+        self.main_window.current_result_text = display_text
+
+        self.main_window.complete_result_text = result_text
         self.main_window.current_result_data = results
         dictionary_name = (
             self.main_window.analyzer.get_current_dictionary_name()
@@ -555,11 +569,15 @@ class AnalysisController:
 
         self.main_window.complete_result_text = result_text
 
-        self.main_window.current_result_text = result_text
+        current_format = self.main_window.analyze_tab.get_output_format()
 
+        display_text = result_text
+        if current_format == "simple":
+            display_text = self._extract_three_fields(result_text)
+
+        self.main_window.current_result_text = display_text
         self.main_window.current_result_data = results
-
-        self.main_window.analyze_tab.set_output_text(result_text)
+        self.main_window.analyze_tab.set_output_text(display_text, current_format)
 
         dictionary_name = (
             self.main_window.analyzer.get_current_dictionary_name()
@@ -595,19 +613,53 @@ class AnalysisController:
         self.main_window.analyze_tab.set_output_stats("エラー発生")
         self.main_window.analyze_tab.set_download_button_enabled(False)
 
-    def download_result(self):
+    def _convert_to_simple_format(self, data):
+        if isinstance(data, list):
+            result = []
+            for item in data:
+                if isinstance(item, tuple) and len(item) >= 2:
+                    filename, text = item[0], item[1]
+                    converted_text = self._extract_three_fields(text)
+                    result.append((filename, converted_text))
+            return result
+        else:
+            return self._extract_three_fields(data)
+
+    def _extract_three_fields(self, text):
+        lines = text.strip().split("\n")
+        result_lines = []
+
+        for line in lines:
+            if not line.strip():
+                result_lines.append("")
+                continue
+
+            fields = line.split("\t")
+            if len(fields) >= 13:
+                surface_form = fields[5]
+                lemma = fields[6]
+                pos = fields[8]
+                result_lines.append(f"{surface_form}\t{lemma}\t{pos}")
+            else:
+                result_lines.append(line)
+
+        return "\n".join(result_lines)
+
+    def download_result(self, output_format="openchj"):
         if (
             not self.main_window.current_result_text
             and not self.main_window.current_result_data
         ):
-            QMessageBox.warning(
-                self.main_window, "", "出力する解析結果がありません。"
-            )
+            QMessageBox.warning(self.main_window, "", "出力する解析結果がありません。")
             return
 
         output_settings = self.main_window.config.config.get("output_settings", {})
         prefix = output_settings.get("prefix", "")
-        suffix = output_settings.get("suffix", "_analyzed") or "_analyzed"
+        suffix = output_settings.get("suffix")
+        if not suffix:
+            from utils.dictionary_info import get_dictionary_based_suffix
+
+            suffix = get_dictionary_based_suffix(self.main_window.config)
         suffix = replace_datetime_placeholder(suffix)
 
         is_custom_dir = output_settings.get("use_custom_output_dir", False)
@@ -654,6 +706,10 @@ class AnalysisController:
                         ) as src_file:
                             content = src_file.read()
                             content = content.replace("\r\n", "\n")
+
+                            if output_format == "simple":
+                                content = self._extract_three_fields(content)
+
                             with open(output_path, "wb") as dst_file:
                                 dst_file.write(content.encode("utf-8"))
                         success_count += 1
@@ -671,9 +727,7 @@ class AnalysisController:
                 else:
                     msg_box = QMessageBox(self.main_window)
                     msg_box.setWindowTitle("出力完了")
-                    msg_box.setText(
-                        f"{success_count}個のファイルの出力が完了しました"
-                    )
+                    msg_box.setText(f"{success_count}個のファイルの出力が完了しました")
                     msg_box.setIcon(QMessageBox.Information)
                     msg_box.setStandardButtons(QMessageBox.Ok)
                     self._style_message_box_buttons(msg_box)
@@ -692,7 +746,7 @@ class AnalysisController:
                 base_name = (
                     os.path.splitext(os.path.basename(input_path))[0]
                     if input_path and os.path.isfile(input_path)
-                    else "analyzed"
+                    else "manual_input"
                 )
                 output_filename = f"{prefix}{base_name}{suffix}.txt"
                 output_path = os.path.join(output_dir, output_filename)
@@ -707,6 +761,9 @@ class AnalysisController:
 
                 if "===プレビューはここまでです===" in content:
                     content = content.split("\n===プレビューはここまでです===")[0]
+
+                if output_format == "simple":
+                    content = self._extract_three_fields(content)
 
                 with open(output_path, "wb") as f:
                     f.write(content.encode("utf-8"))
@@ -739,3 +796,22 @@ class AnalysisController:
     def _style_message_box_buttons(self, msg_box):
         for button in msg_box.buttons():
             apply_button_style(button, "small")
+
+    def handle_output_format_changed(self, format_type):
+        if (
+            hasattr(self.main_window, "complete_result_text")
+            and self.main_window.complete_result_text
+        ):
+            if format_type == "simple":
+                simple_text = self._extract_three_fields(
+                    self.main_window.complete_result_text
+                )
+                self.main_window.analyze_tab.set_output_text(simple_text, "simple")
+                self.main_window.current_result_text = simple_text
+            elif format_type == "openchj":
+                self.main_window.analyze_tab.set_output_text(
+                    self.main_window.complete_result_text, "openchj"
+                )
+                self.main_window.current_result_text = (
+                    self.main_window.complete_result_text
+                )

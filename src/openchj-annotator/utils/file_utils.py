@@ -187,7 +187,7 @@ def get_files_in_directory(
 
 def generate_output_filename(
     input_path: str,
-    suffix: str = "_analyzed",
+    suffix: str,
     extension: str = ".txt",
     prefix: str = "",
 ) -> str:

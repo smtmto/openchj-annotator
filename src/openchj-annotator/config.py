@@ -32,7 +32,7 @@ class Config:
         "output_settings": {
             "format": "TSV",
             "prefix": "",
-            "suffix": "_analyzed",
+            "suffix": None,
             "default_directory": "",
             "output_directory": None,
             "remove_full_space": False,

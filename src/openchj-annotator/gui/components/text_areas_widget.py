@@ -1,13 +1,26 @@
 from typing import Dict, List, Optional
 
-from gui.styles import (DEFAULT_FONT_FAMILY, apply_button_style,
-                        apply_label_style, apply_table_scrollbar_style,
-                        apply_text_areas_style)
+from gui.styles import (
+    DEFAULT_FONT_FAMILY,
+    apply_button_style,
+    apply_label_style,
+    apply_table_scrollbar_style,
+    apply_text_areas_style,
+)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QFont, QTextCharFormat, QTextCursor
-from PySide6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QSizePolicy,
-                               QSplitter, QTableWidget, QTableWidgetItem,
-                               QTextEdit, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class TextAreasWidget(QWidget):
@@ -62,7 +75,7 @@ class TextAreasWidget(QWidget):
         left_layout.addLayout(input_header_layout)
 
         self.input_text = QTextEdit()
-        self.input_text.setReadOnly(True)
+        self.input_text.setReadOnly(False)
         self.input_text.setMinimumWidth(130)
         self.input_text.setMinimumHeight(100)
         self.input_text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -213,13 +226,16 @@ class TextAreasWidget(QWidget):
         self.input_text_truncated = False
         self.full_input_text = ""
 
+    def set_input_text_readonly(self, readonly):
+        self.input_text.setReadOnly(readonly)
+
     def set_format_text(self, text: str):
         self.set_format_text_with_tag_info(text, None)
 
     def clear_format_text(self):
         self.format_text.clear()
 
-    def set_output_text(self, text: str):
+    def set_output_text(self, text: str, format_type="openchj"):
         apply_table_scrollbar_style(self.output_table)
         font = QFont(DEFAULT_FONT_FAMILY, 9)
         lines = text.strip().split("\n")
@@ -241,28 +257,38 @@ class TextAreasWidget(QWidget):
         if is_truncated:
             filtered_lines.append("=プレビューはここまでです=")
 
-        headers = [
-            "ファイル名",
-            "サブコーパス名",
-            "開始文字位置",
-            "終了文字位置",
-            "文境界",
-            "書字形出現形",
-            "語彙素",
-            "語彙素読み",
-            "品詞",
-            "活用型",
-            "活用形",
-            "発音形",
-            "語種",
-        ]
+        if format_type == "simple":
+            headers = [
+                "書字形出現形",
+                "語彙素",
+                "品詞",
+            ]
+            max_columns = 3
+        else:
+            headers = [
+                "ファイル名",
+                "サブコーパス名",
+                "開始文字位置",
+                "終了文字位置",
+                "文境界",
+                "書字形出現形",
+                "語彙素",
+                "語彙素読み",
+                "品詞",
+                "活用型",
+                "活用形",
+                "発音形",
+                "語種",
+            ]
+            max_columns = 13
+
         self.output_table.setColumnCount(len(headers))
         self.output_table.setHorizontalHeaderLabels(headers)
         self.output_table.verticalHeader().setVisible(False)
         self.output_table.setRowCount(len(filtered_lines))
 
         for row_idx, line in enumerate(filtered_lines):
-            columns = line.split("\t")[:13]
+            columns = line.split("\t")[:max_columns]
 
             self.output_table.setRowHeight(row_idx, 20)
 

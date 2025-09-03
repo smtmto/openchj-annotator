@@ -3,11 +3,18 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from gui.components.tag_special_settings_widget import TagSpecialSettingsWidget
 from gui.custom_widgets import CustomCheckBox
-from gui.styles import (apply_checkbox_style, apply_frame_style,
-                        apply_label_style)
+from gui.styles import apply_checkbox_style, apply_frame_style, apply_label_style
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel,
-                               QPushButton, QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from config import Config
 

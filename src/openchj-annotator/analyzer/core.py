@@ -3,16 +3,18 @@ import os
 from typing import Dict, List, Optional, Tuple
 
 import fugashi
-from utils.file_utils import (get_downloads_directory, read_text_file,
-                              replace_datetime_placeholder, write_text_file)
+from utils.file_utils import (
+    get_downloads_directory,
+    read_text_file,
+    replace_datetime_placeholder,
+    write_text_file,
+)
 from utils.tag_processor import TagProcessor
 
 from config import Config
 
-from .analyzer_utils import (format_pos, get_dictionary_display_name,
-                             load_jis_mapping)
-from .preprocessor import (apply_text_formatting_for_display,
-                           get_format_settings)
+from .analyzer_utils import format_pos, get_dictionary_display_name, load_jis_mapping
+from .preprocessor import apply_text_formatting_for_display, get_format_settings
 from .sentence_boundary import adjust_sentence_boundaries
 
 
@@ -626,7 +628,11 @@ class OpenCHJAnnotator:
 
             if output_path is None:
                 prefix = output_settings.get("prefix", "")
-                suffix = output_settings.get("suffix", "_analyzed")
+                suffix = output_settings.get("suffix")
+                if not suffix:
+                    from utils.dictionary_info import get_dictionary_based_suffix
+
+                    suffix = get_dictionary_based_suffix(self.config)
                 suffix = replace_datetime_placeholder(suffix)
                 use_custom_dir = output_settings.get("use_custom_output_dir", False)
                 output_dir_base = (
