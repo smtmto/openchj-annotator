@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget
 
 from .dictionary_settings_widget import DictionarySettingsWidget
 from .output_settings import OutputSettingsFrame
+from .sentence_boundary_settings_widget import SentenceBoundarySettingsWidget
 from .subcorpus_settings_widget import SubcorpusSettingsWidget
 
 
@@ -33,7 +34,7 @@ class SettingsTabWidget(QWidget):
         apply_scroll_content_style(scroll_content)
         content_layout = QVBoxLayout(scroll_content)
         content_layout.setContentsMargins(20, 5, 20, 5)
-        content_layout.setSpacing(15)
+        content_layout.setSpacing(10)
 
         self.dict_settings_widget = DictionarySettingsWidget(
             self.config, scroll_content
@@ -58,6 +59,18 @@ class SettingsTabWidget(QWidget):
         apply_frame_style(separator2, "separator")
         separator2.setFixedHeight(1)
         content_layout.addWidget(separator2)
+
+        self.sentence_boundary_settings_widget = SentenceBoundarySettingsWidget(
+            scroll_content, self.config
+        )
+        content_layout.addWidget(self.sentence_boundary_settings_widget)
+
+        separator3 = QFrame()
+        separator3.setFrameShape(QFrame.HLine)
+        separator3.setFrameShadow(QFrame.Sunken)
+        apply_frame_style(separator3, "separator")
+        separator3.setFixedHeight(1)
+        content_layout.addWidget(separator3)
 
         self.output_settings_frame = OutputSettingsFrame(
             scroll_content, self.config, self.dict_settings_widget

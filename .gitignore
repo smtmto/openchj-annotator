@@ -157,5 +157,11 @@ cython_debug/
 # IDE
 .vscode/
 
+# Claude Code
+.claude/
+
 # PyPI
 .pypirc
+
+# User-specific development config
+/config/

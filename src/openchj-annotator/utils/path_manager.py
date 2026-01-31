@@ -64,6 +64,11 @@ def get_effective_config_file_path(filename="config.json"):
                 },
                 "regex_settings": {"enabled": False, "patterns": []},
                 "tag_special_settings": {"tag_patterns": []},
+                "sentence_boundary_settings": {
+                    "end_punct": "。",
+                    "end_quote": "設定なし",
+                    "use_explicit_marker": False,
+                },
                 "subcorpus_name": "",
                 "regex_rules": [],
                 "aozora_cleanup": False,

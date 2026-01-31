@@ -15,7 +15,16 @@ from config import Config
 
 from .analyzer_utils import format_pos, get_dictionary_display_name, load_jis_mapping
 from .preprocessor import apply_text_formatting_for_display, get_format_settings
-from .sentence_boundary import adjust_sentence_boundaries
+from .rekion_data_processor import (
+    extract_pid_from_filename,
+    find_utterance_id_for_token,
+    is_rekion_data,
+    preprocess_rekion_text,
+)
+from .sentence_boundary import (
+    adjust_sentence_boundaries,
+    strip_explicit_boundary_markers,
+)
 
 
 class OpenCHJAnnotator:
@@ -402,15 +411,34 @@ class OpenCHJAnnotator:
         return identified_sequences
 
     def analyze(
-        self, text: str, temp_format_settings: Optional[Dict] = None
+        self,
+        text: str,
+        temp_format_settings: Optional[Dict] = None,
+        preserve_char_positions: bool = False,
     ) -> List[Dict]:
         current_format_settings = get_format_settings(self.config, temp_format_settings)
+        sentence_boundary_settings = self.config.config.get(
+            "sentence_boundary_settings", {}
+        )
+        explicit_marker_placeholder = "__OPENCHJ_BOUNDARY__"
+        text_for_processing = text
+        if sentence_boundary_settings.get("use_explicit_marker", False):
+            text_for_processing = text_for_processing.replace(
+                "[B]", explicit_marker_placeholder
+            )
 
         text_formatted_for_fugashi = apply_text_formatting_for_display(
-            text,
+            text_for_processing,
             current_format_settings,
             self.jis_mapping,
         )
+        explicit_boundary_positions = None
+        if sentence_boundary_settings.get("use_explicit_marker", False):
+            text_formatted_for_fugashi, explicit_boundary_positions = (
+                strip_explicit_boundary_markers(
+                    text_formatted_for_fugashi, marker=explicit_marker_placeholder
+                )
+            )
         try:
             fugashi_output_iterable = self.tagger(text_formatted_for_fugashi)
             fugashi_nodes = list(fugashi_output_iterable)
@@ -540,15 +568,72 @@ class OpenCHJAnnotator:
             processed_tokens_count_for_chj += 1
 
         final_tokens_adjusted_boundary = adjust_sentence_boundaries(
-            final_tokens_with_chj
+            final_tokens_with_chj,
+            settings=sentence_boundary_settings,
+            explicit_boundary_positions=explicit_boundary_positions,
         )
 
-        for token in final_tokens_adjusted_boundary:
-            token.pop("_original_char_start", None)
-            token.pop("_original_char_end", None)
-            token.pop("_is_special_tag", None)
+        # If preserve_char_positions is True, preserve character positions (for rekion data)
+        if not preserve_char_positions:
+            for token in final_tokens_adjusted_boundary:
+                token.pop("_original_char_start", None)
+                token.pop("_original_char_end", None)
+                token.pop("_is_special_tag", None)
+        else:
+            for token in final_tokens_adjusted_boundary:
+                token.pop("_is_special_tag", None)
 
         return final_tokens_adjusted_boundary
+
+    def analyze_with_source(
+        self,
+        text: str,
+        source_filename: Optional[str] = None,
+        temp_format_settings: Optional[Dict] = None,
+    ) -> Tuple[List[Dict], Optional[str], Optional[List[Dict]]]:
+        subcorpus_name = self.config.config.get("subcorpus_name", "")
+
+        rekion_pid: Optional[str] = None
+        rekion_utterance_info: Optional[List[Dict]] = None
+        preserve_positions = False
+        processed_text = text
+
+        if is_rekion_data(subcorpus_name):
+            if source_filename:
+                rekion_pid = extract_pid_from_filename(
+                    os.path.basename(source_filename)
+                )
+            processed_text, rekion_utterance_info = preprocess_rekion_text(text)
+            preserve_positions = True
+
+        results = self.analyze(
+            processed_text,
+            temp_format_settings=temp_format_settings,
+            preserve_char_positions=preserve_positions,
+        )
+
+        if (
+            is_rekion_data(subcorpus_name)
+            and rekion_utterance_info
+            and len(rekion_utterance_info) > 0
+        ):
+            for token in results:
+                token_char_start = token.get("_original_char_start", 0)
+                utterance_id = find_utterance_id_for_token(
+                    token_char_start, rekion_utterance_info
+                )
+                if not utterance_id:
+                    utterance_id = find_utterance_id_for_token(
+                        token_char_start + 1, rekion_utterance_info
+                    )
+                if utterance_id:
+                    token["_rekion_utterance_id"] = utterance_id
+
+            for token in results:
+                token.pop("_original_char_start", None)
+                token.pop("_original_char_end", None)
+
+        return results, rekion_pid, rekion_utterance_info
 
     def analyze_parallel(
         self,
@@ -579,9 +664,23 @@ class OpenCHJAnnotator:
             self.tag_processor.process_text(text, temp_config=tag_special_config_for_tp)
         )
 
-        text_for_display_formatted = apply_text_formatting_for_display(
-            text, current_format_settings, self.jis_mapping
+        sentence_boundary_settings = self.config.config.get(
+            "sentence_boundary_settings", {}
         )
+        explicit_marker_placeholder = "__OPENCHJ_BOUNDARY__"
+        text_for_processing = text
+        if sentence_boundary_settings.get("use_explicit_marker", False):
+            text_for_processing = text_for_processing.replace(
+                "[B]", explicit_marker_placeholder
+            )
+
+        text_for_display_formatted = apply_text_formatting_for_display(
+            text_for_processing, current_format_settings, self.jis_mapping
+        )
+        if sentence_boundary_settings.get("use_explicit_marker", False):
+            text_for_display_formatted, _ = strip_explicit_boundary_markers(
+                text_for_display_formatted, marker=explicit_marker_placeholder
+            )
 
         return text_for_display_formatted, detected_tags_for_highlight_on_original
 
@@ -592,9 +691,23 @@ class OpenCHJAnnotator:
             "OpenCHJAnnotator.preprocess_text (class method) is now returning fully formatted text for display/preview purposes."
         )
         current_format_settings = get_format_settings(self.config, temp_format_settings)
-        return apply_text_formatting_for_display(
-            text, current_format_settings, self.jis_mapping
+        sentence_boundary_settings = self.config.config.get(
+            "sentence_boundary_settings", {}
         )
+        explicit_marker_placeholder = "__OPENCHJ_BOUNDARY__"
+        text_for_processing = text
+        if sentence_boundary_settings.get("use_explicit_marker", False):
+            text_for_processing = text_for_processing.replace(
+                "[B]", explicit_marker_placeholder
+            )
+        formatted_text = apply_text_formatting_for_display(
+            text_for_processing, current_format_settings, self.jis_mapping
+        )
+        if sentence_boundary_settings.get("use_explicit_marker", False):
+            formatted_text, _ = strip_explicit_boundary_markers(
+                formatted_text, marker=explicit_marker_placeholder
+            )
+        return formatted_text
 
     def _get_platform_specific_path(self, path: str, for_mecab: bool = True) -> str:
         if not path:
@@ -604,10 +717,22 @@ class OpenCHJAnnotator:
         else:
             return path.replace("\\", "/")
 
-    def format_as_tsv(self, results: List[Dict], filename: str = "unknown.txt") -> str:
+    def format_as_tsv(
+        self,
+        results: List[Dict],
+        filename: str = "unknown.txt",
+        rekion_pid: str = None,
+        rekion_utterance_info: List[Dict] = None,
+    ) -> str:
         from .formatter import format_as_tsv as format_tsv_external
 
-        return format_tsv_external(results, filename, self.config)
+        return format_tsv_external(
+            results,
+            filename,
+            self.config,
+            rekion_pid=rekion_pid,
+            rekion_utterance_info=rekion_utterance_info,
+        )
 
     def format_as_csv(self, results: List[Dict], filename: str = "unknown.txt") -> str:
         from .formatter import format_as_csv as format_csv_external
@@ -622,7 +747,39 @@ class OpenCHJAnnotator:
     def analyze_file(self, input_path: str, output_path: str = None) -> str:
         try:
             text = read_text_file(input_path)
-            results = self.analyze(text)
+
+            # Special handling for rekion data (historical audio data)
+            subcorpus_name = self.config.config.get("subcorpus_name", "")
+            rekion_pid = None
+            rekion_utterance_info = []
+
+            if is_rekion_data(subcorpus_name):
+                rekion_pid = extract_pid_from_filename(os.path.basename(input_path))
+                # Preprocess text to get utterance information
+                text, rekion_utterance_info = preprocess_rekion_text(text)
+
+            # For rekion data (historical audio data), preserve character positions
+            preserve_positions = is_rekion_data(subcorpus_name)
+            results = self.analyze(text, preserve_char_positions=preserve_positions)
+
+            # For rekion data (historical audio data), add utteranceId to each token
+            if is_rekion_data(subcorpus_name) and rekion_pid and rekion_utterance_info:
+                for token in results:
+                    token_char_start = token.get("_original_char_start", 0)
+                    utterance_id = find_utterance_id_for_token(
+                        token_char_start, rekion_utterance_info
+                    )
+                    if not utterance_id:
+                        utterance_id = find_utterance_id_for_token(
+                            token_char_start + 1, rekion_utterance_info
+                        )
+                    if utterance_id:
+                        token["_rekion_utterance_id"] = utterance_id
+                # Character position information is no longer needed, so delete it
+                for token in results:
+                    token.pop("_original_char_start", None)
+                    token.pop("_original_char_end", None)
+
             output_settings = self.config.config.get("output_settings", {})
             encoding = "utf-8"
 
@@ -649,7 +806,18 @@ class OpenCHJAnnotator:
                 )
 
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            content = self.format_as_tsv(results, os.path.basename(input_path))
+
+            # For rekion data (historical audio data), pass PID and utterance information
+            if is_rekion_data(subcorpus_name):
+                content = self.format_as_tsv(
+                    results,
+                    os.path.basename(input_path),
+                    rekion_pid=rekion_pid,
+                    rekion_utterance_info=rekion_utterance_info,
+                )
+            else:
+                content = self.format_as_tsv(results, os.path.basename(input_path))
+
             write_text_file(content, output_path, encoding=encoding)
             return output_path
         except FileNotFoundError:

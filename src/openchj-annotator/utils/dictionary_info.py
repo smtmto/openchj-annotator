@@ -14,6 +14,7 @@ JP_TO_EN_MAP = {
     "近世江戸口語": "kinsei-edo",
     "近世上方口語": "kinsei-kamigata",
     "近代口語小説": "novel",
+    "旧仮名口語": "qkana",
     "和歌": "waka",
 }
 

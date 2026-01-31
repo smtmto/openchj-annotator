@@ -69,26 +69,13 @@ class OutputSettingsFrame(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
-        format_group = QGroupBox("出力形式")
-        format_group.setMinimumHeight(60)
-        format_layout = QVBoxLayout(format_group)
-        format_layout.setContentsMargins(10, 5, 10, 5)
-
-        format_info = QLabel(
-            "ファイル拡張子: .txt　内容形式: TSV　エンコーディング: UTF-8 (BOMなし)　改行コード: LF"
-        )
-        apply_label_style(format_info)
-        format_layout.addWidget(format_info)
-
-        layout.addWidget(format_group)
-        layout.addSpacing(5)
-
         folder_group = QGroupBox("入力ディレクトリ処理設定")
-        folder_group.setMinimumHeight(60)
+        folder_group.setMinimumHeight(50)
         folder_layout = QVBoxLayout(folder_group)
-        folder_layout.setContentsMargins(10, 5, 10, 5)
+        folder_layout.setContentsMargins(10, 6, 10, 6)
 
         self.include_subfolders_checkbox = CustomCheckBox(
             "入力フォルダを再帰的に処理する（サブフォルダも含めて処理）"
@@ -103,9 +90,9 @@ class OutputSettingsFrame(QWidget):
         layout.addSpacing(5)
 
         naming_group = QGroupBox("出力ファイル名規則")
-        naming_group.setMinimumHeight(110)
+        naming_group.setMinimumHeight(95)
         naming_layout = QVBoxLayout(naming_group)
-        naming_layout.setContentsMargins(10, 10, 10, 15)
+        naming_layout.setContentsMargins(10, 6, 10, 6)
 
         filename_layout = QHBoxLayout()
         filename_layout.setSpacing(5)
@@ -113,7 +100,7 @@ class OutputSettingsFrame(QWidget):
 
         self.prefix_input = QLineEdit()
         self.prefix_input.setPlaceholderText("プレフィックス")
-        self.prefix_input.setFixedHeight(24)
+        self.prefix_input.setFixedHeight(22)
         apply_input_style(self.prefix_input)
         self.prefix_input.textChanged.connect(self.on_settings_changed)
         self.prefix_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -128,7 +115,7 @@ class OutputSettingsFrame(QWidget):
         self.suffix_input.setPlaceholderText(
             f"サフィックス（デフォルト: {self._get_default_suffix()}）"
         )
-        self.suffix_input.setFixedHeight(24)
+        self.suffix_input.setFixedHeight(22)
         apply_input_style(self.suffix_input)
         self.suffix_input.setReadOnly(True)
         self.suffix_input.setFocusPolicy(Qt.NoFocus)
@@ -138,13 +125,13 @@ class OutputSettingsFrame(QWidget):
         filename_layout.addWidget(self.suffix_input, 4, Qt.AlignVCenter)
 
         self.add_date_button = QPushButton("日時追加")
-        self.add_date_button.setFixedHeight(24)
+        self.add_date_button.setFixedHeight(22)
         apply_button_style(self.add_date_button, "config")
         self.add_date_button.clicked.connect(self.add_datetime_to_suffix)
         filename_layout.addWidget(self.add_date_button, 0, Qt.AlignVCenter)
 
         self.clear_suffix_button = QPushButton("クリア")
-        self.clear_suffix_button.setFixedHeight(24)
+        self.clear_suffix_button.setFixedHeight(22)
         apply_button_style(self.clear_suffix_button, "secondary")
         self.clear_suffix_button.clicked.connect(self.clear_datetime_from_suffix)
         filename_layout.addWidget(self.clear_suffix_button, 0, Qt.AlignVCenter)
@@ -152,7 +139,7 @@ class OutputSettingsFrame(QWidget):
         naming_layout.addLayout(filename_layout)
 
         self.filename_preview = QLabel()
-        self.filename_preview.setFixedHeight(20)
+        self.filename_preview.setFixedHeight(18)
         apply_label_style(self.filename_preview)
         naming_layout.addWidget(self.filename_preview, 0, Qt.AlignBottom)
 
@@ -160,9 +147,9 @@ class OutputSettingsFrame(QWidget):
         layout.addSpacing(5)
 
         directory_group = QGroupBox("出力先設定")
-        directory_group.setMinimumHeight(130)
+        directory_group.setMinimumHeight(120)
         directory_layout = QVBoxLayout(directory_group)
-        directory_layout.setContentsMargins(10, 10, 10, 10)
+        directory_layout.setContentsMargins(10, 6, 10, 6)
 
         output_dir_combo_layout = QGridLayout()
         output_dir_combo_layout.setColumnStretch(1, 1)
@@ -224,6 +211,12 @@ class OutputSettingsFrame(QWidget):
         clear_container_layout.addWidget(self.clear_button, 0, Qt.AlignCenter)
         output_dir_path_layout.addWidget(clear_container, 0, 3, Qt.AlignCenter)
         directory_layout.addLayout(output_dir_path_layout)
+
+        format_info = QLabel(
+            "ファイル拡張子: .txt　内容形式: TSV　エンコーディング: UTF-8 (BOMなし)　改行コード: LF"
+        )
+        apply_label_style(format_info)
+        directory_layout.addWidget(format_info)
         try:
             dict_btn_h = self.dictionary_settings.dic_entry.sizeHint().height()
             self.browse_button.setFixedHeight(dict_btn_h)

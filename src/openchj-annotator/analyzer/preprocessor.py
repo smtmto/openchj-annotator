@@ -166,7 +166,9 @@ def apply_text_formatting_for_display(
                 try:
                     pattern_str_tag = f"{re.escape(b_open)}.*?{re.escape(b_close)}"
                     if mode == "remove_with_content":
-                        formatted_text = re.sub(pattern_str_tag, "", formatted_text)
+                        formatted_text = re.sub(
+                            pattern_str_tag, "", formatted_text, flags=re.DOTALL
+                        )
                     elif mode == "remove_tags_only":
 
                         def repl_tags_only_local(match_obj):
@@ -176,7 +178,10 @@ def apply_text_formatting_for_display(
                             return ""
 
                         formatted_text = re.sub(
-                            pattern_str_tag, repl_tags_only_local, formatted_text
+                            pattern_str_tag,
+                            repl_tags_only_local,
+                            formatted_text,
+                            flags=re.DOTALL,
                         )
                 except re.error as e:
                     logging.warning(

@@ -71,7 +71,17 @@ class AnalysisWorker(QThread):
                 return
 
             self.start_animation.emit("テキストを解析しています")
-            results = self.analyzer.analyze(self.text)
+            from utils.file_utils import extract_filename_from_path
+
+            filename = (
+                extract_filename_from_path(self.text_source)
+                if self.text_source
+                else "manual_input.txt"
+            )
+
+            results, rekion_pid, rekion_utterance_info = (
+                self.analyzer.analyze_with_source(self.text, source_filename=filename)
+            )
             self.stop_animation.emit()
 
             if not results:
@@ -81,14 +91,12 @@ class AnalysisWorker(QThread):
                 return
 
             self.start_animation.emit("結果をフォーマットしています")
-            from utils.file_utils import extract_filename_from_path
-
-            filename = (
-                extract_filename_from_path(self.text_source)
-                if self.text_source
-                else "manual_input.txt"
+            result_text = self.analyzer.format_as_tsv(
+                results,
+                filename,
+                rekion_pid=rekion_pid,
+                rekion_utterance_info=rekion_utterance_info,
             )
-            result_text = self.analyzer.format_as_tsv(results, filename)
             self.stop_animation.emit()
             self.finished.emit(result_text, results)
 

@@ -1,23 +1,45 @@
 import json
+import logging
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .analyzer_utils import csv_escape
 
 
 def format_as_tsv(
-    results: List[Dict], filename: str = "unknown.txt", config=None
+    results: List[Dict],
+    filename: str = "unknown.txt",
+    config=None,
+    rekion_pid: Optional[str] = None,
+    rekion_utterance_info: Optional[List[Dict]] = None,
 ) -> str:
     lines = []
     base_filename = os.path.basename(filename)
     base_filename = os.path.splitext(base_filename)[0]
 
-    for result in results:
+    subcorpus = ""
+    if config:
+        subcorpus = config.config.get("subcorpus_name", "")
+
+    is_rekion = subcorpus == "歴史的音源"
+
+    for token_idx, result in enumerate(results):
         result["file_name"] = base_filename
-        subcorpus = ""
-        if config:
-            subcorpus = config.config.get("subcorpus_name", "")
         result["subcorpus_name"] = "-" if not subcorpus else subcorpus
+
+        # For rekion data (historical audio data), change filename to {PID}_{utteranceId} format
+        if is_rekion and rekion_pid:
+            # Use utteranceId already set in token
+            utterance_id = result.get("_rekion_utterance_id")
+
+            if utterance_id:
+                result["file_name"] = f"{rekion_pid}_{utterance_id}"
+            else:
+                # If utteranceId cannot be obtained, use PID only
+                result["file_name"] = rekion_pid
+                logging.warning(
+                    f"[rekion] Token {token_idx} has no utteranceId, using PID only"
+                )
 
         row = [
             result.get("file_name", base_filename),

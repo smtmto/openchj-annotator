@@ -108,9 +108,18 @@ class BatchAnalysisWorker(QThread):
                             )
                             continue
 
-                        results_data = self.analyzer.analyze(text)
+                        results_data, rekion_pid, rekion_utterance_info = (
+                            self.analyzer.analyze_with_source(
+                                text, source_filename=filename
+                            )
+                        )
 
-                        content = self.analyzer.format_as_tsv(results_data, filename)
+                        content = self.analyzer.format_as_tsv(
+                            results_data,
+                            filename,
+                            rekion_pid=rekion_pid,
+                            rekion_utterance_info=rekion_utterance_info,
+                        )
 
                         write_text_file(content, temp_path, encoding="utf-8")
                         results.append((filename, True, temp_path))

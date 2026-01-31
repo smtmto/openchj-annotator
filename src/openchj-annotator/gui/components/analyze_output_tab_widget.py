@@ -76,6 +76,7 @@ class AnalyzeOutputTabWidget(QWidget):
 
         button_layout.addSpacing(10)
         button_layout.addWidget(self.openchj_radio)
+        button_layout.addSpacing(15)
         button_layout.addWidget(self.simple_radio)
         button_layout.addStretch()
 

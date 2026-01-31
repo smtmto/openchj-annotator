@@ -26,6 +26,11 @@ class Config:
         },
         "regex_settings": {"enabled": False, "patterns": []},
         "tag_special_settings": {"tag_patterns": []},
+        "sentence_boundary_settings": {
+            "end_punct": "。",
+            "end_quote": "設定なし",
+            "use_explicit_marker": False,
+        },
         "subcorpus_name": "",
         "regex_rules": [],
         "aozora_cleanup": False,
@@ -86,6 +91,7 @@ class Config:
                 with open(self.config_path, "r", encoding="utf-8") as f:
                     config_data_from_file = json.load(f)
                 merged_config = copy.deepcopy(self.DEFAULT_CONFIG)
+                config_updated = False
                 for key, value_from_file in config_data_from_file.items():
                     if (
                         key in merged_config
@@ -96,11 +102,15 @@ class Config:
                             if sub_key in merged_config[key]:
                                 merged_config[key][sub_key] = sub_value_from_file
                             else:
-                                pass
+                                config_updated = True
                     elif key in merged_config:
                         merged_config[key] = value_from_file
                     else:
-                        pass
+                        config_updated = True
+                if merged_config != config_data_from_file:
+                    config_updated = True
+                if config_updated:
+                    self._save_config_to_path(merged_config, self.config_path)
                 return merged_config
             except json.JSONDecodeError:
                 logging.warning(
