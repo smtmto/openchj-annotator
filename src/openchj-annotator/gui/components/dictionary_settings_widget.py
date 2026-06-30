@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from utils.dictionary_info import get_dictionary_metadata
 from utils.file_utils import normalize_path
 
 
@@ -231,45 +232,21 @@ class DictionarySettingsWidget(QWidget):
                 return
 
             try:
-                readme_dir = os.path.dirname(filename)
-                readme_path = None
-                for f in os.listdir(readme_dir):
-                    if f.upper().startswith("README") and os.path.isfile(
-                        os.path.join(readme_dir, f)
-                    ):
-                        readme_path = os.path.join(readme_dir, f)
-                        break
-
-                if not readme_path:
-                    msg_box = QMessageBox(self)
-                    msg_box.setWindowTitle("エラー")
-                    msg_box.setText("辞書情報を取得できませんでした。")
-                    msg_box.setInformativeText(
-                        "dicrcファイルと同じフォルダにREADMEファイルがあるか確認してください。"
-                    )
-                    msg_box.setIcon(QMessageBox.Warning)
-                    msg_box.setStandardButtons(QMessageBox.Ok)
-                    self._style_message_box_buttons(msg_box)
-                    msg_box.exec()
-                    return
-
-                if readme_path:
-                    with open(readme_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        if any(
-                            keyword in content
-                            for keyword in ["上代語", "中古和文", "和歌"]
-                        ):
-                            msg_box = QMessageBox(self)
-                            msg_box.setWindowTitle("非対応辞書")
-                            msg_box.setText("このUniDicは動作対象外です。")
-                            msg_box.setIcon(QMessageBox.Warning)
-                            msg_box.setStandardButtons(QMessageBox.Ok)
-                            self._style_message_box_buttons(msg_box)
-                            msg_box.exec()
-                            return
+                self._create_tagger_for_dictionary(filename, include_user_dict=False)
             except Exception as e:
-                logging.warning(f"Could not check dictionary README: {e}")
+                logging.warning(f"Dictionary validation failed: {e}")
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("非対応辞書")
+                msg_box.setText("このUniDicは動作対象外です。")
+                msg_box.setInformativeText(
+                    "辞書の初期化に失敗しました。別のUniDicを選択するか、"
+                    "旧バージョンのアプリケーションをお試しください。"
+                )
+                msg_box.setIcon(QMessageBox.Warning)
+                msg_box.setStandardButtons(QMessageBox.Ok)
+                self._style_message_box_buttons(msg_box)
+                msg_box.exec()
+                return
 
             try:
                 normalized_path = normalize_path(filename)
@@ -425,32 +402,10 @@ class DictionarySettingsWidget(QWidget):
 
     def _check_dictionary_compatibility(self, user_dict_path):
         try:
-
-            active_dict = self.config.get_active_dictionary()
-            dict_path = self.config.get_unidic_path(active_dict)
-
-            if active_dict == "lite" or not dict_path:
+            if self.config.get_active_dictionary() == "lite":
                 logging.warning("ユーザー辞書はliteでは使用できません")
                 return False
-
-            options = ""
-            if dict_path and isinstance(dict_path, str) and os.path.exists(dict_path):
-                if os.path.isdir(dict_path):
-                    dict_path_win = dict_path.replace("/", "\\")
-                    options = f'-d "{dict_path_win}"'
-                elif os.path.isfile(dict_path):
-                    dict_dir_win = os.path.dirname(dict_path).replace("/", "\\")
-                    options = f'-d "{dict_dir_win}"'
-
-            if not options:
-                logging.warning(f"システム辞書パスが見つかりません: {dict_path}")
-                return False
-
-            user_dict_win = user_dict_path.replace("/", "\\")
-            with_user_dict_options = f'{options} -u "{user_dict_win}"'
-
-            tagger = fugashi.Tagger(with_user_dict_options)
-            tagger("テスト文章です")
+            self._create_tagger_for_dictionary(user_dict_path=user_dict_path)
             return True
 
         except Exception as e:
@@ -459,6 +414,53 @@ class DictionarySettingsWidget(QWidget):
             if "incompatible dictionary" in error_msg:
                 logging.warning(f"辞書の互換性がありません: {user_dict_path}")
             return False
+
+    def _create_tagger_for_dictionary(
+        self, dict_path=None, include_user_dict=True, user_dict_path=None
+    ):
+        active_dict = self.config.get_active_dictionary()
+        dict_path = dict_path or self.config.get_unidic_path(active_dict)
+
+        if active_dict == "lite" and dict_path is None:
+            raise ValueError("UniDic-lite does not accept user dictionaries.")
+        if not dict_path or not os.path.exists(dict_path):
+            raise FileNotFoundError(f"システム辞書パスが見つかりません: {dict_path}")
+
+        dict_dir = dict_path if os.path.isdir(dict_path) else os.path.dirname(dict_path)
+        dict_dir = dict_dir.replace("/", "\\") if os.name == "nt" else dict_dir
+        rc_option = "-r NUL" if os.name == "nt" else "-r /dev/null"
+        options = f'{rc_option} -d "{dict_dir}"'
+
+        if include_user_dict:
+            user_dict_path = user_dict_path or self.config.get_user_dictionary_path()
+            if user_dict_path:
+                user_dict_path = (
+                    user_dict_path.replace("/", "\\")
+                    if os.name == "nt"
+                    else user_dict_path
+                )
+                options = f'{options} -u "{user_dict_path}"'
+
+        try:
+            tagger = fugashi.Tagger(options)
+            tagger("テスト文章です")
+            return tagger
+        except Exception as tagger_error:
+            try:
+                tagger = fugashi.GenericTagger(options)
+                tagger("テスト文章です")
+                logging.info(
+                    f"fugashi.Tagger failed for dictionary validation ('{options}'): "
+                    f"{tagger_error}. fugashi.GenericTagger succeeded."
+                )
+                return tagger
+            except Exception as generic_error:
+                logging.warning(
+                    f"Both fugashi.Tagger and fugashi.GenericTagger failed for "
+                    f"dictionary validation ('{options}'): {tagger_error}; "
+                    f"{generic_error}"
+                )
+                raise
 
     def toggle_controls(self):
         config_changed = self.check_dictionary_paths()
@@ -521,24 +523,11 @@ class DictionarySettingsWidget(QWidget):
         if not dict_path or not os.path.exists(dict_path):
             return "カスタム辞書", "unidic-custom"
         try:
-            dicrc_dir = os.path.dirname(dict_path)
-            readme_path = None
-            for file in os.listdir(dicrc_dir):
-                if file.upper().startswith("README") and os.path.isfile(
-                    os.path.join(dicrc_dir, file)
-                ):
-                    readme_path = os.path.join(dicrc_dir, file)
-                    break
-
-            if readme_path:
-                with open(readme_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    lines = content.splitlines()
-                    display_name = (
-                        lines[1].strip() if len(lines) >= 2 else "カスタム辞書"
-                    )
-                    english_suffix = self._generate_english_suffix(content)
-                    return display_name, english_suffix
+            metadata = get_dictionary_metadata(dict_path)
+            return (
+                metadata.get("display_name") or "カスタム辞書",
+                metadata.get("suffix") or "unidic-custom",
+            )
         except Exception as e:
             logging.error(f"Error getting dictionary info: {e}")
 

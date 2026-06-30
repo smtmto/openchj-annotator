@@ -25,7 +25,7 @@ from .controllers.ui_controller import UIController
 class MainWindow(QMainWindow):
     def __init__(self, config=None):
         super().__init__()
-        self.setWindowTitle("OpenCHJAnnotator 0.7.0")
+        self.setWindowTitle("OpenCHJAnnotator 0.7.5")
         self.setMinimumSize(600, 500)
         self.resize(940, 760)
         self.font_family = DEFAULT_FONT_FAMILY

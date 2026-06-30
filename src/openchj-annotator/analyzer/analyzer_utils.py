@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Dict, Optional
 
+from utils.dictionary_info import get_dictionary_metadata
+
 _pm_module = None
 try:
     from utils import path_manager as pm_mod
@@ -98,43 +100,9 @@ def get_dictionary_display_name(dict_path_or_dicrc: str) -> Optional[str]:
         return None
 
     try:
-        if (
-            os.path.isfile(dict_path_or_dicrc)
-            and os.path.basename(dict_path_or_dicrc).lower() == "dicrc"
-        ):
-            dict_dir = os.path.dirname(dict_path_or_dicrc)
-        elif os.path.isdir(dict_path_or_dicrc):
-            dict_dir = dict_path_or_dicrc
-        elif os.path.isfile(dict_path_or_dicrc):
-            dict_dir = os.path.dirname(dict_path_or_dicrc)
-        else:
-            return None
-
-        readme_path = None
-        for filename in os.listdir(dict_dir):
-            if filename.lower().startswith("readme") and os.path.isfile(
-                os.path.join(dict_dir, filename)
-            ):
-                readme_path = os.path.join(dict_dir, filename)
-                break
-
-        if readme_path:
-            with open(readme_path, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()
-                if len(lines) >= 2:
-                    dict_name_line = lines[1].strip()
-                    if dict_name_line:
-                        if (
-                            re.match(r"^[vV]?\d+\.\d+", dict_name_line)
-                            or "date:" in dict_name_line.lower()
-                        ):
-                            if lines[0].strip():
-                                return lines[0].strip()
-                        return dict_name_line
-                    elif lines[0].strip():
-                        return lines[0].strip()
-                elif len(lines) == 1 and lines[0].strip():
-                    return lines[0].strip()
+        display_name = get_dictionary_metadata(dict_path_or_dicrc).get("display_name")
+        if display_name:
+            return display_name
     except Exception as e:
         logging.error(
             f"Error while getting dictionary name for path '{dict_path_or_dicrc}': {e}"

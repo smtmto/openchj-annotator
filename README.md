@@ -34,14 +34,12 @@
 
 - 各種 UniDic 辞書の設定: アプリ内説明文を参照してください。
 - 文境界設定: 次の記号類を文末に設定できます。 [ 。, ？, ！, 」, 』 ]
-- 「タグ特別設定」: タグ内の文字列の品詞を指定します。  
-  　　　例:　`[F:あの]`　 → 　書字形出現形: `あの`　品詞: `感動詞-フィラー`
+- 「タグ特別設定」: タグ内の文字列に任意の品詞を設定します。
 
 ### UniDic について
 
 - デフォルトでは unidic-lite を使用します。
 - 各種 UniDic を利用する場合は、国立国語研究所の UniDic のサイトから別途ダウンロードしてください。
-- 古文用 UniDicS の一部（和歌、中古和文、上代語）は動作対象外です。
 
 ### OpenCHJ 形式について
 
@@ -102,14 +100,14 @@
 
 ## バージョン情報
 
-- Version: 0.7.0
-- Release Date: 2026-01-31
+- Version: 0.7.5
+- Release Date: 2026-06-30
 
 ### 引用
 
 本アプリケーションを研究等で参照される場合の引用例は、以下の通りです。
 
-Matsumoto, S. (2026). OpenCHJAnnotator (バージョン 0.7.0). https://github.com/smtmto/openchj-annotator
+Matsumoto, S. (2026). OpenCHJAnnotator (バージョン 0.7.5). https://github.com/smtmto/openchj-annotator
 
 関連論文：  
 Matsumoto, S. (2025). 短単位検索システムと OpenCHJ 形式形態論情報付与ツールの構築. 言語資源ワークショップ 2025 (LRW2025), Online. https://doi.org/10.5281/zenodo.16994066

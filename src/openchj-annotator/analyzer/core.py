@@ -124,7 +124,9 @@ class OpenCHJAnnotator:
 
                 if user_dict_option_part:
                     try:
-                        tagger = fugashi.Tagger(options_with_user_dict)
+                        tagger = self._create_tagger_with_fallback(
+                            options_with_user_dict
+                        )
                         tagger("テスト文章です")
                         self.user_dict_incompatible = False
                         return tagger
@@ -139,7 +141,7 @@ class OpenCHJAnnotator:
                                 f"User dictionary '{user_dict_path}' is incompatible with system dictionary '{dict_path}'."
                             )
                 try:
-                    tagger = fugashi.Tagger(options_system_only)
+                    tagger = self._create_tagger_with_fallback(options_system_only)
                     tagger("テスト文章です")
                     return tagger
                 except Exception as e_system_only:
@@ -162,6 +164,24 @@ class OpenCHJAnnotator:
         except Exception as e_outer:
             logging.critical(f"Outer Tagger initialization failed: {e_outer}")
             return fugashi.Tagger(rc_option)
+
+    def _create_tagger_with_fallback(self, options: str):
+        try:
+            return fugashi.Tagger(options)
+        except Exception as tagger_error:
+            try:
+                tagger = fugashi.GenericTagger(options)
+                logging.info(
+                    f"fugashi.Tagger failed ('{options}'): {tagger_error}. "
+                    "fugashi.GenericTagger succeeded."
+                )
+                return tagger
+            except Exception as generic_error:
+                logging.warning(
+                    f"Both fugashi.Tagger and fugashi.GenericTagger failed "
+                    f"('{options}'): {tagger_error}; {generic_error}"
+                )
+                raise
 
     def get_current_dictionary_name(self) -> str:
         if hasattr(self, "tagger") and self.tagger:
